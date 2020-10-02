@@ -1,0 +1,90 @@
+---
+title: "Asset-allocation"
+author: "Arthur Paolucci"
+date: "02/10/2020"
+output: html_document
+---
+
+```{r setup, include=F}
+chooseCRANmirror(graphics=FALSE, ind=1)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r cabeçalho, echo = F, evaluate = T, message = F, warning = F, include = F}
+## Asset Allocation Problem
+# Este código tem o objetivo de estimar a alocação do fundo de investimentos multimercados JGP Strategy Master na janela de tempo definida.
+```
+
+```{r limpeza de memória, include = F}
+rm(list = ls())
+```
+
+```{r pasta, include = F}
+setwd("/Users/arthur/documents/coding/files/rstudio/trabalho-econometria")
+getwd()
+```
+
+```{r definindo as opções, include = FALSE}
+options(OutDec = ".", round = 2, digits = c(5,2))
+```
+
+```{r pacotes, echo = T, eval = T, message = T, warning = T, include = F}
+# Pacotes populares: readxl, dplyr, tidyr, stringr, lubridate, plotly, dygraphs, data.table, tibble, zoo, xts, quantmod, BETs, sidrar. 
+packset = c("readxl","tidyyr","lubridate","xts","quantmod","PerformanceAnalytics")
+not_inst <- packset[!(packset %in% installed.packages()[,"Package"])]
+if(length(not_inst)) install.packages(not_inst)
+lapply(packset, require, character.only = TRUE)
+```
+
+# Asset Allocation Problem
+
+### Problema
+
+### Revisão Bibliográfica
+
+### Base de Dados
+
+##### Importando os dados da Economatica
+
+A FGV disponibiliza aos alunos o acesso à base de dados economatica. Para esse trabalho temos o interesse em obter as cotações do fundo analisado (JGP Strategy...) e dos índices que servirão como proxy para os fatores de risco.
+
+Entretanto, para trabalhar esse conjunto de dados como cross-sectional devemos utilizar os retornos ao invés dos níveis de preço.
+
+```{r database, echo = T, eval = T, include = F}
+# Importar planilhas excel para cada conjunto de dados (readxl)
+
+# Calcular os retornos (Performance Analytics)
+# Atenção escolher uma forma de caluclar e usar pra todos (log ou não)
+
+```
+
+### Metodologia (OLS)
+
+##### 1. Relação Linear (nos coeficientes)
+
+##### 2. Média Condicional Zero
+
+##### 3. Amostra Aleatória (iid)
+
+##### 4. Multicolinearidade não-perfeita
+
+##### 5. Homocedasticidade
+
+
+### Report Results
+
+### Conclusão
+
+### Teste:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=T}
+plot(pressure)
+```
