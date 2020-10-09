@@ -19,18 +19,13 @@ knitr::opts_chunk$set(echo = TRUE)
 rm(list = ls())
 ```
 
-```{r pasta, include = F}
-setwd("/Users/arthur/documents/coding/files/rstudio/trabalho-econometria")
-getwd()
-```
-
 ```{r definindo as opções, include = FALSE}
 options(OutDec = ".", round = 2, digits = c(5,2))
 ```
 
 ```{r pacotes, echo = T, eval = T, message = T, warning = T, include = F}
 # Pacotes populares: readxl, dplyr, tidyr, stringr, lubridate, plotly, dygraphs, data.table, tibble, zoo, xts, quantmod, BETs, sidrar. 
-packset = c("readxl","tidyyr","lubridate","xts","quantmod","PerformanceAnalytics")
+packset = c("readxl","tidyr","lubridate","xts","quantmod","PerformanceAnalytics")
 not_inst <- packset[!(packset %in% installed.packages()[,"Package"])]
 if(length(not_inst)) install.packages(not_inst)
 lapply(packset, require, character.only = TRUE)
@@ -52,10 +47,89 @@ Entretanto, para trabalhar esse conjunto de dados como cross-sectional devemos u
 
 ```{r database, echo = T, eval = T, include = F}
 # Importar planilhas excel para cada conjunto de dados (readxl)
+jgp <-  read_xlsx('database.xlsx',sheet='285536', skip=3, col_names=T)
+ibov <- read_xlsx('database.xlsx',sheet='IBOV', skip=3, col_names=T)
+snp <- read_xlsx('database.xlsx',sheet='S&P 500', skip=3, col_names=T)
+imab5 <- read_xlsx('database.xlsx',sheet='IMA-B 5', skip=3, col_names=T)
+imab5p <- read_xlsx('database.xlsx',sheet='IMA-B 5+', skip=3, col_names=T)
+dolar <- read_xlsx('database.xlsx',sheet='DOLX20s', skip=3, col_names=T)
+di21 <- read_xlsx('database.xlsx',sheet='DI1F21', skip=3, col_names=T)
+di25 <- read_xlsx('database.xlsx',sheet='DI1F25', skip=3, col_names=T)
+
+# Transformar em timeseries object
+jgp <- as.xts(jgp[,'Cota'],order.by = jgp$Data)
+ibov <- as.xts(ibov[,'Fechamento'],order.by = ibov$Data)
+snp <- as.xts(snp[,'Fechamento'],order.by = snp$Data)
+imab5 <- as.xts(imab5[,'Fechamento'],order.by = imab5$Data)
+imab5p <- as.xts(imab5p[,'Fechamento'],order.by = imab5p$Data)
+dolar <- as.xts(dolar[,'Fechamento'],order.by = dolar$Data)
+di21 <- as.xts(di21[,'Fechamento'],order.by = di21$Data)
+di25 <- as.xts(di25[,'Fechamento'],order.by = di25$Data)
+
+# Converter '-' para NA
+jgp <- na_if(jgp$Cota,"-")
+ibov <- na_if(ibov$Fechamento,"-")
+snp <- na_if(snp$Fechamento,"-")
+imab5 <- na_if(imab5$Fechamento,"-")
+imab5p <- na_if(imab5p$Fechamento,"-")
+dolar <- na_if(dolar$Fechamento,"-")
+di21 <- na_if(di21$Fechamento,"-")
+di25 <- na_if(di25$Fechamento,"-")
+
+# Merge xts
+dat <- merge.zoo(jgp, ibov, snp, imab5, imab5p, dolar, di21, di25,
+                 fill=NA, all=T, 
+                 suffixes=c('jgp', 'ibov', 'snp', 'imab5', 'imab5p',
+                            'dolar', 'di21', 'di25'))
+
+## Solução para dias úteis descasados: repetir última observação
+dat <- na.locf(dat)
+
+# Converter dados para numericos
+storage.mode(dat) <- "numeric"
+
+# Selecionar periodo de interesse
+index(dat) <- as.Date(index(dat))
+dat <- window(dat, start = as.Date("2014-01-01"),
+              end = as.Date("2020-01-01"))
 
 # Calcular os retornos (Performance Analytics)
-# Atenção escolher uma forma de caluclar e usar pra todos (log ou não)
+dat$Ret.jgp <- Return.calculate(dat$Cota,
+                          method = "log")%>%na.omit()
+dat$Ret.ibov <- Return.calculate(dat$Fechamento.ibov,
+                          method = "log")%>%na.omit()
+dat$Ret.snp <- Return.calculate(dat$Fechamento.snp,
+                          method = "log")%>%na.omit()
+dat$Ret.imab5 <- Return.calculate(dat$Fechamento.imab5,
+                          method = "log")%>%na.omit()
+dat$Ret.imab5p <- Return.calculate(dat$Fechamento.imab5p,
+                          method = "log")%>%na.omit()
+dat$Ret.dolar <- Return.calculate(dat$Fechamento.dolar,
+                          method = "log")%>%na.omit()
+dat$Ret.di21 <- Return.calculate(dat$Fechamento.di21,
+                          method = "log")%>%na.omit()
+dat$Ret.di25 <- Return.calculate(dat$Fechamento.di25,
+                          method = "log")%>%na.omit()
 
+# Histogramas dos retornos
+his <- dat %>%
+    ggplot(aes(x=Ret.ibov)) +
+        geom_histogram(binwidth=0.01, fill="#69b3a2", 
+                       color="#e9ecef", alpha=0.9) +
+        xlab("Daily Returns") +
+        ylab("Frequency")
+his
+
+
+# Selecionar rolling windows (ver função rollapply())
+## Exemplo com uma janela de +-21 dias
+tmp <- window(dat, start = as.Date("2019-06-01"),
+              end = as.Date("2019-06-22"))
+
+# Regressão linear OLS
+regres <- lm(Ret.jgp~Ret.ibov+Ret.snp+Ret.imab5+Ret.imab5p+
+               Ret.di21+Ret.di25, data=tmp)
+summary(regres)
 ```
 
 ### Metodologia (OLS)
@@ -75,16 +149,3 @@ Entretanto, para trabalhar esse conjunto de dados como cross-sectional devemos u
 
 ### Conclusão
 
-### Teste:
-
-```{r cars}
-summary(cars)
-```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=T}
-plot(pressure)
-```
