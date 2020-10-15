@@ -25,7 +25,7 @@ options(OutDec = ".", round = 2, digits = c(5,2))
 
 ```{r pacotes, echo = T, eval = T, message = T, warning = T, include = F}
 # Pacotes populares: readxl, dplyr, tidyr, stringr, lubridate, plotly, dygraphs, data.table, tibble, zoo, xts, quantmod, BETs, sidrar. 
-packset = c("readxl","tidyr","lubridate","xts","quantmod","PerformanceAnalytics")
+packset = c("readxl","tidyr","dplyr","lubridate","xts","PerformanceAnalytics","plotly","dygraphs","dplyr")
 not_inst <- packset[!(packset %in% installed.packages()[,"Package"])]
 if(length(not_inst)) install.packages(not_inst)
 lapply(packset, require, character.only = TRUE)
@@ -45,42 +45,53 @@ A FGV disponibiliza aos alunos o acesso à base de dados economatica. Para esse 
 
 Entretanto, para trabalhar esse conjunto de dados como cross-sectional devemos utilizar os retornos ao invés dos níveis de preço.
 
-```{r database, echo = T, eval = T, include = F}
+```{r database, echo = F, eval = T, include = F}
 # Importar planilhas excel para cada conjunto de dados (readxl)
-jgp <-  read_xlsx('database.xlsx',sheet='285536', skip=3, col_names=T)
+verde <-  read_xlsx('database.xlsx',sheet='VERDE', skip=3, col_names=T)
 ibov <- read_xlsx('database.xlsx',sheet='IBOV', skip=3, col_names=T)
 snp <- read_xlsx('database.xlsx',sheet='S&P 500', skip=3, col_names=T)
 imab5 <- read_xlsx('database.xlsx',sheet='IMA-B 5', skip=3, col_names=T)
 imab5p <- read_xlsx('database.xlsx',sheet='IMA-B 5+', skip=3, col_names=T)
-dolar <- read_xlsx('database.xlsx',sheet='DOLX20s', skip=3, col_names=T)
-di21 <- read_xlsx('database.xlsx',sheet='DI1F21', skip=3, col_names=T)
-di25 <- read_xlsx('database.xlsx',sheet='DI1F25', skip=3, col_names=T)
+dolar <- read_xlsx('database.xlsx',sheet='DOLX20', skip=3, col_names=T)
+di17 <- read_xlsx('database.xlsx',sheet='DI1N17', skip=3, col_names=T)
+di19 <- read_xlsx('database.xlsx',sheet='DI1N19', skip=3, col_names=T)
+di21 <- read_xlsx('database.xlsx',sheet='DI1N21', skip=3, col_names=T)
+di23 <- read_xlsx('database.xlsx',sheet='DI1N23', skip=3, col_names=T)
+di25 <- read_xlsx('database.xlsx',sheet='DI1N25', skip=3, col_names=T)
 
 # Transformar em timeseries object
-jgp <- as.xts(jgp[,'Cota'],order.by = jgp$Data)
+verde <- as.xts(verde[,'Cota'],order.by = verde$Data)
 ibov <- as.xts(ibov[,'Fechamento'],order.by = ibov$Data)
 snp <- as.xts(snp[,'Fechamento'],order.by = snp$Data)
 imab5 <- as.xts(imab5[,'Fechamento'],order.by = imab5$Data)
 imab5p <- as.xts(imab5p[,'Fechamento'],order.by = imab5p$Data)
 dolar <- as.xts(dolar[,'Fechamento'],order.by = dolar$Data)
+di17 <- as.xts(di17[,'Fechamento'],order.by = di17$Data)
+di19 <- as.xts(di19[,'Fechamento'],order.by = di19$Data)
 di21 <- as.xts(di21[,'Fechamento'],order.by = di21$Data)
+di23 <- as.xts(di23[,'Fechamento'],order.by = di23$Data)
 di25 <- as.xts(di25[,'Fechamento'],order.by = di25$Data)
 
 # Converter '-' para NA
-jgp <- na_if(jgp$Cota,"-")
+verde <- na_if(verde$Cota,"-")
 ibov <- na_if(ibov$Fechamento,"-")
 snp <- na_if(snp$Fechamento,"-")
 imab5 <- na_if(imab5$Fechamento,"-")
 imab5p <- na_if(imab5p$Fechamento,"-")
 dolar <- na_if(dolar$Fechamento,"-")
+di17 <- na_if(di17$Fechamento,"-")
+di19 <- na_if(di19$Fechamento,"-")
 di21 <- na_if(di21$Fechamento,"-")
+di23 <- na_if(di23$Fechamento,"-")
 di25 <- na_if(di25$Fechamento,"-")
 
 # Merge xts
-dat <- merge.zoo(jgp, ibov, snp, imab5, imab5p, dolar, di21, di25,
+dat <- merge.zoo(verde, ibov, snp, imab5, imab5p, dolar, 
+                 di17, di19, di21, di23, di25,
                  fill=NA, all=T, 
-                 suffixes=c('jgp', 'ibov', 'snp', 'imab5', 'imab5p',
-                            'dolar', 'di21', 'di25'))
+                 suffixes=c('verde', 'ibov', 'snp',
+                            'imab5', 'imab5p', 'dolar',
+                            'di17', 'di19', 'di21', 'di23', 'di25'))
 
 ## Solução para dias úteis descasados: repetir última observação
 dat <- na.locf(dat)
@@ -88,13 +99,8 @@ dat <- na.locf(dat)
 # Converter dados para numericos
 storage.mode(dat) <- "numeric"
 
-# Selecionar periodo de interesse
-index(dat) <- as.Date(index(dat))
-dat <- window(dat, start = as.Date("2014-01-01"),
-              end = as.Date("2020-01-01"))
-
 # Calcular os retornos (Performance Analytics)
-dat$Ret.jgp <- Return.calculate(dat$Cota,
+dat$Ret.verde <- Return.calculate(dat$Cota,
                           method = "log")%>%na.omit()
 dat$Ret.ibov <- Return.calculate(dat$Fechamento.ibov,
                           method = "log")%>%na.omit()
@@ -106,30 +112,69 @@ dat$Ret.imab5p <- Return.calculate(dat$Fechamento.imab5p,
                           method = "log")%>%na.omit()
 dat$Ret.dolar <- Return.calculate(dat$Fechamento.dolar,
                           method = "log")%>%na.omit()
+dat$Ret.di17 <- Return.calculate(dat$Fechamento.di17,
+                          method = "log")%>%na.omit()
+dat$Ret.di19 <- Return.calculate(dat$Fechamento.di19,
+                          method = "log")%>%na.omit()
 dat$Ret.di21 <- Return.calculate(dat$Fechamento.di21,
+                          method = "log")%>%na.omit()
+dat$Ret.di23 <- Return.calculate(dat$Fechamento.di23,
                           method = "log")%>%na.omit()
 dat$Ret.di25 <- Return.calculate(dat$Fechamento.di25,
                           method = "log")%>%na.omit()
+```
 
+```{r janelas, echo = T, eval = T, include = T}
+# Selecionar janelas de interesse
+index(dat) <- as.Date(index(dat))
+
+## Janela 1: janela de 70 dias até 2016-07-01
+end_date <- index(dat[index(dat)>='2016-07-01',][1,])
+start_date <- index(dat)[match(end_date,index(dat))-69]
+jan1 <- window(dat, start = start_date, end = end_date)
+str(jan1)
+
+## Janela 2: janela de 70 dias até 2018-07-01
+end_date <- index(dat[index(dat)>='2018-07-01',][1,])
+start_date <- index(dat)[match(end_date,index(dat))-69]
+jan2 <- window(dat, start = start_date, end = end_date)
+str(jan2)
+
+## Janela 3: janela de 70 dias até 2020-07-01
+end_date <- index(dat[index(dat)>='2020-07-01',][1,])
+start_date <- index(dat)[match(end_date,index(dat))-69]
+jan3 <- window(dat, start = start_date, end = end_date)
+str(jan3)
+```
+
+```{r regres, echo = T, eval = T, include = T}
+# Regressão linear OLS
+## Regressão da janela 1 (2016)
+regres1 <- lm(Ret.verde~Ret.ibov+Ret.snp+Ret.imab5+Ret.imab5p+
+               Ret.dolar+Ret.di17+Ret.di21, data=jan1)
+summary(regres1)
+
+## Regressão da janela 2 (2018)
+regres2 <- lm(Ret.verde~Ret.ibov+Ret.snp+Ret.imab5+Ret.imab5p+
+               Ret.dolar+Ret.di19+Ret.di23, data=jan2)
+summary(regres2)
+
+## Regressão da janela 3 (2020)
+regres3 <- lm(Ret.verde~Ret.ibov+Ret.snp+Ret.imab5+Ret.imab5p+
+               Ret.dolar+Ret.di21+Ret.di25, data=jan3)
+summary(regres3)
+```
+
+```{r histograma, echo = F, eval = T, include = F}
 # Histogramas dos retornos
-his <- dat %>%
+## Vale fazer um facet grid dos retornos?
+his <- jan1 %>%
     ggplot(aes(x=Ret.ibov)) +
         geom_histogram(binwidth=0.01, fill="#69b3a2", 
                        color="#e9ecef", alpha=0.9) +
         xlab("Daily Returns") +
         ylab("Frequency")
 his
-
-
-# Selecionar rolling windows (ver função rollapply())
-## Exemplo com uma janela de +-21 dias
-tmp <- window(dat, start = as.Date("2019-06-01"),
-              end = as.Date("2019-06-22"))
-
-# Regressão linear OLS
-regres <- lm(Ret.jgp~Ret.ibov+Ret.snp+Ret.imab5+Ret.imab5p+
-               Ret.di21+Ret.di25, data=tmp)
-summary(regres)
 ```
 
 ### Metodologia (OLS)
