@@ -4,6 +4,7 @@ author: "Arthur Paolucci"
 date: "02/10/2020"
 output:
   word_document: default
+  pdf_document: default
   html_document: default
 ---
 
@@ -165,6 +166,8 @@ skew1 <- with(jan1, cbind(skewness(Ret.verde), skewness(Ret.ibov), skewness(Ret.
 
 kurt1 <- with(jan1, cbind(kurtosis(Ret.verde), kurtosis(Ret.ibov), kurtosis(Ret.snp), kurtosis(Ret.imab5), kurtosis(Ret.imab5p), kurtosis(Ret.dolar), kurtosis(Ret.di17), kurtosis(Ret.di21)))
 
+corr1 <- with(jan1, cbind(cor(Ret.verde,Ret.verde), cor(Ret.verde,Ret.ibov), cor(Ret.verde,Ret.snp), cor(Ret.verde,Ret.imab5), cor(Ret.verde,Ret.imab5p), cor(Ret.verde,Ret.dolar), cor(Ret.verde,Ret.di17), cor(Ret.verde,Ret.di21)))
+
 ## Janela 2:
 media2 <- with(jan2, cbind(mean(Ret.verde), mean(Ret.ibov), mean(Ret.snp), mean(Ret.imab5), mean(Ret.imab5p), mean(Ret.dolar), mean(Ret.di19), mean(Ret.di23)))
 
@@ -173,6 +176,8 @@ ep2 <- with(jan2, cbind(sd(Ret.verde), sd(Ret.ibov), sd(Ret.snp), sd(Ret.imab5),
 skew2 <- with(jan2, cbind(skewness(Ret.verde), skewness(Ret.ibov), skewness(Ret.snp), skewness(Ret.imab5), skewness(Ret.imab5p), skewness(Ret.dolar), skewness(Ret.di19), skewness(Ret.di23)))
 
 kurt2 <- with(jan2, cbind(kurtosis(Ret.verde), kurtosis(Ret.ibov), kurtosis(Ret.snp), kurtosis(Ret.imab5), kurtosis(Ret.imab5p), kurtosis(Ret.dolar), kurtosis(Ret.di19), kurtosis(Ret.di23)))
+
+corr2 <- with(jan2, cbind(cor(Ret.verde,Ret.verde), cor(Ret.verde,Ret.ibov), cor(Ret.verde,Ret.snp), cor(Ret.verde,Ret.imab5), cor(Ret.verde,Ret.imab5p), cor(Ret.verde,Ret.dolar), cor(Ret.verde,Ret.di19), cor(Ret.verde,Ret.di23)))
 
 ## Janela 3:
 
@@ -184,46 +189,47 @@ skew3 <- with(jan3, cbind(skewness(Ret.verde), skewness(Ret.ibov), skewness(Ret.
 
 kurt3 <- with(jan3, cbind(kurtosis(Ret.verde), kurtosis(Ret.ibov), kurtosis(Ret.snp), kurtosis(Ret.imab5), kurtosis(Ret.imab5p), kurtosis(Ret.dolar), kurtosis(Ret.di21), kurtosis(Ret.di25)))
 
+corr3 <- with(jan3, cbind(cor(Ret.verde,Ret.verde), cor(Ret.verde,Ret.ibov), cor(Ret.verde,Ret.snp), cor(Ret.verde,Ret.imab5), cor(Ret.verde,Ret.imab5p), cor(Ret.verde,Ret.dolar), cor(Ret.verde,Ret.di21), cor(Ret.verde,Ret.di25)))
 ```
 
 **Estatisticas Janela 1:**
 
-Fator| Mean| Standard Deviation| Skewness| Kurtosis
-------------- | -------------| -------------| -------------| -------------
-Ret.verde | `r  media1[,1]`|`r  ep1[,1]`|`r  skew1[,1]`|`r  kurt1[,1]`
-Ret.ibov | `r  media1[,2]`|`r  ep1[,2]`|`r  skew1[,2]`|`r  kurt1[,2]`
-Ret.snp | `r  media1[,3]`|`r  ep1[,3]`|`r  skew1[,3]`|`r  kurt1[,3]`
-Ret.imab5 | `r  media1[,4]`|`r  ep1[,4]`|`r  skew1[,4]`|`r  kurt1[,4]`
-Ret.imab5p | `r  media1[,5]`|`r  ep1[,5]`|`r  skew1[,5]`|`r  kurt1[,5]`
-Ret.dolar | `r  media1[,6]`|`r  ep1[,6]`|`r  skew1[,6]`|`r  kurt1[,6]`
-Ret.di17 | `r  media1[,7]`|`r  ep1[,7]`|`r  skew1[,7]`|`r  kurt1[,7]`
-Ret.di21 | `r  media1[,8]`|`r  ep1[,8]`|`r  skew1[,8]`|`r  kurt1[,8]`
+Fator| Mean| Standard Deviation| Skewness| Kurtosis| Corr(Ret.verde)
+------------- | -------------| -------------| -------------| -------------| -------------
+Ret.verde | `r  media1[,1]`|`r  ep1[,1]`|`r  skew1[,1]`|`r  kurt1[,1]`| `r  corr1[,1]`
+Ret.ibov | `r  media1[,2]`|`r  ep1[,2]`|`r  skew1[,2]`|`r  kurt1[,2]`| `r  corr1[,2]`
+Ret.snp | `r  media1[,3]`|`r  ep1[,3]`|`r  skew1[,3]`|`r  kurt1[,3]`| `r  corr1[,3]`
+Ret.imab5 | `r  media1[,4]`|`r  ep1[,4]`|`r  skew1[,4]`|`r  kurt1[,4]`| `r  corr1[,4]`
+Ret.imab5p | `r  media1[,5]`|`r  ep1[,5]`|`r  skew1[,5]`|`r  kurt1[,5]`| `r  corr1[,5]`
+Ret.dolar | `r  media1[,6]`|`r  ep1[,6]`|`r  skew1[,6]`|`r  kurt1[,6]`| `r  corr1[,6]`
+Ret.di17 | `r  media1[,7]`|`r  ep1[,7]`|`r  skew1[,7]`|`r  kurt1[,7]`| `r  corr1[,7]`
+Ret.di21 | `r  media1[,8]`|`r  ep1[,8]`|`r  skew1[,8]`|`r  kurt1[,8]`| `r  corr1[,8]`
 
 **Estatisticas Janela 2:**
 
-Fator| Mean| Standard Deviation| Skewness| Kurtosis
-------------- | -------------| -------------| -------------| -------------
-Ret.verde | `r  media2[,1]`|`r  ep2[,1]`|`r  skew2[,1]`|`r  kurt2[,1]`
-Ret.ibov | `r  media2[,2]`|`r  ep2[,2]`|`r  skew2[,2]`|`r  kurt2[,2]`
-Ret.snp | `r  media2[,3]`|`r  ep2[,3]`|`r  skew2[,3]`|`r  kurt2[,3]`
-Ret.imab5 | `r  media2[,4]`|`r  ep2[,4]`|`r  skew2[,4]`|`r  kurt2[,4]`
-Ret.imab5p | `r  media2[,5]`|`r  ep2[,5]`|`r  skew2[,5]`|`r  kurt2[,5]`
-Ret.dolar | `r  media2[,6]`|`r  ep2[,6]`|`r  skew2[,6]`|`r  kurt2[,6]`
-Ret.di19 | `r  media2[,7]`|`r  ep2[,7]`|`r  skew2[,7]`|`r  kurt2[,7]`
-Ret.di23 | `r  media2[,8]`|`r  ep2[,8]`|`r  skew2[,8]`|`r  kurt2[,8]`
+Fator| Mean| Standard Deviation| Skewness| Kurtosis| Corr(Ret.verde)
+------------- | -------------| -------------| -------------| -------------| -------------
+Ret.verde | `r  media2[,1]`|`r  ep2[,1]`|`r  skew2[,1]`|`r  kurt2[,1]`| `r  corr2[,1]`
+Ret.ibov | `r  media2[,2]`|`r  ep2[,2]`|`r  skew2[,2]`|`r  kurt2[,2]`| `r  corr2[,2]`
+Ret.snp | `r  media2[,3]`|`r  ep2[,3]`|`r  skew2[,3]`|`r  kurt2[,3]`| `r  corr2[,3]`
+Ret.imab5 | `r  media2[,4]`|`r  ep2[,4]`|`r  skew2[,4]`|`r  kurt2[,4]`| `r  corr2[,4]`
+Ret.imab5p | `r  media2[,5]`|`r  ep2[,5]`|`r  skew2[,5]`|`r  kurt2[,5]`| `r  corr2[,5]`
+Ret.dolar | `r  media2[,6]`|`r  ep2[,6]`|`r  skew2[,6]`|`r  kurt2[,6]`| `r  corr2[,6]`
+Ret.di19 | `r  media2[,7]`|`r  ep2[,7]`|`r  skew2[,7]`|`r  kurt2[,7]`| `r  corr2[,7]`
+Ret.di23 | `r  media2[,8]`|`r  ep2[,8]`|`r  skew2[,8]`|`r  kurt2[,8]`| `r  corr2[,8]`
 
 **Estatisticas Janela 3:**
 
-Fator| Mean| Standard Deviation| Skewness| Kurtosis
-------------- | -------------| -------------| -------------| -------------
-Ret.verde | `r  media3[,1]`|`r  ep3[,1]`|`r  skew3[,1]`|`r  kurt3[,1]`
-Ret.ibov | `r  media3[,2]`|`r  ep3[,2]`|`r  skew3[,2]`|`r  kurt3[,2]`
-Ret.snp | `r  media3[,3]`|`r  ep3[,3]`|`r  skew3[,3]`|`r  kurt3[,3]`
-Ret.imab5 | `r  media3[,4]`|`r  ep3[,4]`|`r  skew3[,4]`|`r  kurt3[,4]`
-Ret.imab5p | `r  media3[,5]`|`r  ep3[,5]`|`r  skew3[,5]`|`r  kurt3[,5]`
-Ret.dolar | `r  media3[,6]`|`r  ep3[,6]`|`r  skew3[,6]`|`r  kurt3[,6]`
-Ret.di21 | `r  media3[,7]`|`r  ep3[,7]`|`r  skew3[,7]`|`r  kurt3[,7]`
-Ret.di25 | `r  media3[,8]`|`r  ep3[,8]`|`r  skew3[,8]`|`r  kurt3[,8]`
+Fator| Mean| Standard Deviation| Skewness| Kurtosis| Corr(Ret.verde)
+------------- | -------------| -------------| -------------| -------------| -------------
+Ret.verde | `r  media3[,1]`|`r  ep3[,1]`|`r  skew3[,1]`|`r  kurt3[,1]`| `r  corr3[,1]`
+Ret.ibov | `r  media3[,2]`|`r  ep3[,2]`|`r  skew3[,2]`|`r  kurt3[,2]`| `r  corr3[,2]`
+Ret.snp | `r  media3[,3]`|`r  ep3[,3]`|`r  skew3[,3]`|`r  kurt3[,3]`| `r  corr3[,3]`
+Ret.imab5 | `r  media3[,4]`|`r  ep3[,4]`|`r  skew3[,4]`|`r  kurt3[,4]`| `r  corr3[,4]`
+Ret.imab5p | `r  media3[,5]`|`r  ep3[,5]`|`r  skew3[,5]`|`r  kurt3[,5]`| `r  corr3[,5]`
+Ret.dolar | `r  media3[,6]`|`r  ep3[,6]`|`r  skew3[,6]`|`r  kurt3[,6]`| `r  corr3[,6]`
+Ret.di21 | `r  media3[,7]`|`r  ep3[,7]`|`r  skew3[,7]`|`r  kurt3[,7]`| `r  corr3[,7]`
+Ret.di25 | `r  media3[,8]`|`r  ep3[,8]`|`r  skew3[,8]`|`r  kurt3[,8]`| `r  corr3[,8]`
 
 **Matriz de correlacoes entre os fatores Janela 1:**
 
