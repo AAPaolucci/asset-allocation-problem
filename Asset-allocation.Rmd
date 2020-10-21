@@ -2,7 +2,9 @@
 title: "Asset-allocation"
 author: "Arthur Paolucci"
 date: "02/10/2020"
-output: html_document
+output:
+  word_document: default
+  html_document: default
 ---
 
 ```{r setup, include=F}
@@ -25,7 +27,7 @@ options(OutDec = ".", round = 2, digits = c(5,2))
 
 ```{r pacotes, echo = T, eval = T, message = T, warning = T, include = F}
 # Pacotes populares: readxl, dplyr, tidyr, stringr, lubridate, plotly, dygraphs, data.table, tibble, zoo, xts, quantmod, BETs, sidrar. 
-packset = c("readxl","tidyr","dplyr","lubridate","xts","PerformanceAnalytics","plotly","dygraphs","dplyr")
+packset = c("readxl","tidyr","dplyr","lubridate","xts","PerformanceAnalytics","plotly","dygraphs","dplyr", "quadprog")
 not_inst <- packset[!(packset %in% installed.packages()[,"Package"])]
 if(length(not_inst)) install.packages(not_inst)
 lapply(packset, require, character.only = TRUE)
@@ -99,6 +101,8 @@ dat <- na.locf(dat)
 # Converter dados para numericos
 storage.mode(dat) <- "numeric"
 
+
+
 # Calcular os retornos (Performance Analytics)
 dat$Ret.verde <- Return.calculate(dat$Cota,
                           method = "log")%>%na.omit()
@@ -147,6 +151,117 @@ jan3 <- window(dat, start = start_date, end = end_date)
 str(jan3)
 ```
 
+
+```{r statisticas, echo = T, eval = T, include = T}
+#Para c/ janela de tempo de cada fator calculamos as estatiscas descritivas.
+
+## Janela 1:
+
+media1 <- with(jan1, cbind(mean(Ret.verde), mean(Ret.ibov), mean(Ret.snp), mean(Ret.imab5), mean(Ret.imab5p), mean(Ret.dolar), mean(Ret.di17), mean(Ret.di21)))
+
+ep1 <- with(jan1, cbind(sd(Ret.verde), sd(Ret.ibov), sd(Ret.snp), sd(Ret.imab5), sd(Ret.imab5p), sd(Ret.dolar), sd(Ret.di17), sd(Ret.di21)))
+
+skew1 <- with(jan1, cbind(skewness(Ret.verde), skewness(Ret.ibov), skewness(Ret.snp), skewness(Ret.imab5), skewness(Ret.imab5p), skewness(Ret.dolar), skewness(Ret.di17), skewness(Ret.di21)))
+
+kurt1 <- with(jan1, cbind(kurtosis(Ret.verde), kurtosis(Ret.ibov), kurtosis(Ret.snp), kurtosis(Ret.imab5), kurtosis(Ret.imab5p), kurtosis(Ret.dolar), kurtosis(Ret.di17), kurtosis(Ret.di21)))
+
+## Janela 2:
+media2 <- with(jan2, cbind(mean(Ret.verde), mean(Ret.ibov), mean(Ret.snp), mean(Ret.imab5), mean(Ret.imab5p), mean(Ret.dolar), mean(Ret.di19), mean(Ret.di23)))
+
+ep2 <- with(jan2, cbind(sd(Ret.verde), sd(Ret.ibov), sd(Ret.snp), sd(Ret.imab5), sd(Ret.imab5p), sd(Ret.dolar), sd(Ret.di19), sd(Ret.di23)))
+
+skew2 <- with(jan2, cbind(skewness(Ret.verde), skewness(Ret.ibov), skewness(Ret.snp), skewness(Ret.imab5), skewness(Ret.imab5p), skewness(Ret.dolar), skewness(Ret.di19), skewness(Ret.di23)))
+
+kurt2 <- with(jan2, cbind(kurtosis(Ret.verde), kurtosis(Ret.ibov), kurtosis(Ret.snp), kurtosis(Ret.imab5), kurtosis(Ret.imab5p), kurtosis(Ret.dolar), kurtosis(Ret.di19), kurtosis(Ret.di23)))
+
+## Janela 3:
+
+media3 <- with(jan3, cbind(mean(Ret.verde), mean(Ret.ibov), mean(Ret.snp), mean(Ret.imab5), mean(Ret.imab5p), mean(Ret.dolar), mean(Ret.di21), mean(Ret.di25)))
+
+ep3 <- with(jan3, cbind(sd(Ret.verde), sd(Ret.ibov), sd(Ret.snp), sd(Ret.imab5), sd(Ret.imab5p), sd(Ret.dolar), sd(Ret.di21), sd(Ret.di25)))
+
+skew3 <- with(jan3, cbind(skewness(Ret.verde), skewness(Ret.ibov), skewness(Ret.snp), skewness(Ret.imab5), skewness(Ret.imab5p), skewness(Ret.dolar), skewness(Ret.di21), skewness(Ret.di25)))
+
+kurt3 <- with(jan3, cbind(kurtosis(Ret.verde), kurtosis(Ret.ibov), kurtosis(Ret.snp), kurtosis(Ret.imab5), kurtosis(Ret.imab5p), kurtosis(Ret.dolar), kurtosis(Ret.di21), kurtosis(Ret.di25)))
+
+```
+
+**Estatisticas Janela 1:**
+
+Fator| Mean| Standard Deviation| Skewness| Kurtosis
+------------- | -------------| -------------| -------------| -------------
+Ret.verde | `r  media1[,1]`|`r  ep1[,1]`|`r  skew1[,1]`|`r  kurt1[,1]`
+Ret.ibov | `r  media1[,2]`|`r  ep1[,2]`|`r  skew1[,2]`|`r  kurt1[,2]`
+Ret.snp | `r  media1[,3]`|`r  ep1[,3]`|`r  skew1[,3]`|`r  kurt1[,3]`
+Ret.imab5 | `r  media1[,4]`|`r  ep1[,4]`|`r  skew1[,4]`|`r  kurt1[,4]`
+Ret.imab5p | `r  media1[,5]`|`r  ep1[,5]`|`r  skew1[,5]`|`r  kurt1[,5]`
+Ret.dolar | `r  media1[,6]`|`r  ep1[,6]`|`r  skew1[,6]`|`r  kurt1[,6]`
+Ret.di17 | `r  media1[,7]`|`r  ep1[,7]`|`r  skew1[,7]`|`r  kurt1[,7]`
+Ret.di21 | `r  media1[,8]`|`r  ep1[,8]`|`r  skew1[,8]`|`r  kurt1[,8]`
+
+**Estatisticas Janela 2:**
+
+Fator| Mean| Standard Deviation| Skewness| Kurtosis
+------------- | -------------| -------------| -------------| -------------
+Ret.verde | `r  media2[,1]`|`r  ep2[,1]`|`r  skew2[,1]`|`r  kurt2[,1]`
+Ret.ibov | `r  media2[,2]`|`r  ep2[,2]`|`r  skew2[,2]`|`r  kurt2[,2]`
+Ret.snp | `r  media2[,3]`|`r  ep2[,3]`|`r  skew2[,3]`|`r  kurt2[,3]`
+Ret.imab5 | `r  media2[,4]`|`r  ep2[,4]`|`r  skew2[,4]`|`r  kurt2[,4]`
+Ret.imab5p | `r  media2[,5]`|`r  ep2[,5]`|`r  skew2[,5]`|`r  kurt2[,5]`
+Ret.dolar | `r  media2[,6]`|`r  ep2[,6]`|`r  skew2[,6]`|`r  kurt2[,6]`
+Ret.di19 | `r  media2[,7]`|`r  ep2[,7]`|`r  skew2[,7]`|`r  kurt2[,7]`
+Ret.di23 | `r  media2[,8]`|`r  ep2[,8]`|`r  skew2[,8]`|`r  kurt2[,8]`
+
+**Estatisticas Janela 3:**
+
+Fator| Mean| Standard Deviation| Skewness| Kurtosis
+------------- | -------------| -------------| -------------| -------------
+Ret.verde | `r  media3[,1]`|`r  ep3[,1]`|`r  skew3[,1]`|`r  kurt3[,1]`
+Ret.ibov | `r  media3[,2]`|`r  ep3[,2]`|`r  skew3[,2]`|`r  kurt3[,2]`
+Ret.snp | `r  media3[,3]`|`r  ep3[,3]`|`r  skew3[,3]`|`r  kurt3[,3]`
+Ret.imab5 | `r  media3[,4]`|`r  ep3[,4]`|`r  skew3[,4]`|`r  kurt3[,4]`
+Ret.imab5p | `r  media3[,5]`|`r  ep3[,5]`|`r  skew3[,5]`|`r  kurt3[,5]`
+Ret.dolar | `r  media3[,6]`|`r  ep3[,6]`|`r  skew3[,6]`|`r  kurt3[,6]`
+Ret.di21 | `r  media3[,7]`|`r  ep3[,7]`|`r  skew3[,7]`|`r  kurt3[,7]`
+Ret.di25 | `r  media3[,8]`|`r  ep3[,8]`|`r  skew3[,8]`|`r  kurt3[,8]`
+
+**Matriz de correlacoes entre os fatores Janela 1:**
+
+Fator| Ret.ibov| Ret.snp| Ret.imab5| Ret.imab5p|Ret.dolar|Ret.di17|Ret.di21
+------------- | -------------| -------------| -------------| -------------| -------------| -------------| -------------
+Ret.ibov | `r  cor(jan1$Ret.ibov, jan1$Ret.ibov)`|`r  cor(jan1$Ret.ibov, jan1$Ret.snp)`|`r  cor(jan1$Ret.ibov, jan1$Ret.imab5)`|`r  cor(jan1$Ret.ibov, jan1$Ret.imab5p)`|`r  cor(jan1$Ret.ibov, jan1$Ret.dolar)`|`r  cor(jan1$Ret.ibov, jan1$Ret.di17)`|`r  cor(jan1$Ret.ibov, jan1$Ret.di21)`
+Ret.snp | `r  cor(jan1$Ret.snp, jan1$Ret.ibov)`|`r  cor(jan1$Ret.snp, jan1$Ret.snp)`|`r  cor(jan1$Ret.snp, jan1$Ret.imab5)`|`r  cor(jan1$Ret.snp, jan1$Ret.imab5p)`|`r  cor(jan1$Ret.snp, jan1$Ret.dolar)`|`r  cor(jan1$Ret.snp, jan1$Ret.di17)`|`r  cor(jan1$Ret.snp, jan1$Ret.di21)`
+Ret.imab5 | `r  cor(jan1$Ret.imab5, jan1$Ret.ibov)`|`r  cor(jan1$Ret.imab5, jan1$Ret.snp)`|`r  cor(jan1$Ret.imab5, jan1$Ret.imab5)`|`r  cor(jan1$Ret.imab5, jan1$Ret.imab5p)`|`r  cor(jan1$Ret.imab5, jan1$Ret.dolar)`|`r  cor(jan1$Ret.imab5, jan1$Ret.di17)`|`r  cor(jan1$Ret.imab5, jan1$Ret.di21)`
+Ret.imab5p | `r  cor(jan1$Ret.imab5p, jan1$Ret.ibov)`|`r  cor(jan1$Ret.imab5p, jan1$Ret.snp)`|`r  cor(jan1$Ret.imab5p, jan1$Ret.imab5)`|`r  cor(jan1$Ret.imab5p, jan1$Ret.imab5p)`|`r  cor(jan1$Ret.imab5p, jan1$Ret.dolar)`|`r  cor(jan1$Ret.imab5p, jan1$Ret.di17)`|`r  cor(jan1$Ret.imab5p, jan1$Ret.di21)`
+Ret.dolar | `r  cor(jan1$Ret.dolar, jan1$Ret.ibov)`|`r  cor(jan1$Ret.dolar, jan1$Ret.snp)`|`r  cor(jan1$Ret.dolar, jan1$Ret.imab5)`|`r  cor(jan1$Ret.dolar, jan1$Ret.imab5p)`|`r  cor(jan1$Ret.dolar, jan1$Ret.dolar)`|`r  cor(jan1$Ret.dolar, jan1$Ret.di17)`|`r  cor(jan1$Ret.dolar, jan1$Ret.di21)`
+Ret.di17 | `r  cor(jan1$Ret.di17, jan1$Ret.ibov)`|`r  cor(jan1$Ret.di17, jan1$Ret.snp)`|`r  cor(jan1$Ret.di17, jan1$Ret.imab5)`|`r  cor(jan1$Ret.di17, jan1$Ret.imab5p)`|`r  cor(jan1$Ret.di17, jan1$Ret.dolar)`|`r  cor(jan1$Ret.di17, jan1$Ret.di17)`|`r  cor(jan1$Ret.di17, jan1$Ret.di21)`
+Ret.di21 | `r  cor(jan1$Ret.di21, jan1$Ret.ibov)`|`r  cor(jan1$Ret.di21, jan1$Ret.snp)`|`r  cor(jan1$Ret.di21, jan1$Ret.imab5)`|`r  cor(jan1$Ret.di21, jan1$Ret.imab5p)`|`r  cor(jan1$Ret.di21, jan1$Ret.dolar)`|`r  cor(jan1$Ret.di21, jan1$Ret.di17)`|`r  cor(jan1$Ret.di21, jan1$Ret.di21)`
+
+**Matriz de correlacoes entre os fatores Janela 2:**
+
+Fator| Ret.ibov| Ret.snp| Ret.imab5| Ret.imab5p|Ret.dolar|Ret.di19|Ret.di23
+------------- | -------------| -------------| -------------| -------------| -------------| -------------| -------------
+Ret.ibov | `r  cor(jan2$Ret.ibov, jan2$Ret.ibov)`|`r  cor(jan2$Ret.ibov, jan2$Ret.snp)`|`r  cor(jan2$Ret.ibov, jan2$Ret.imab5)`|`r  cor(jan2$Ret.ibov, jan2$Ret.imab5p)`|`r  cor(jan2$Ret.ibov, jan2$Ret.dolar)`|`r  cor(jan2$Ret.ibov, jan2$Ret.di19)`|`r  cor(jan2$Ret.ibov, jan2$Ret.di23)`
+Ret.snp | `r  cor(jan2$Ret.snp, jan2$Ret.ibov)`|`r  cor(jan2$Ret.snp, jan2$Ret.snp)`|`r  cor(jan2$Ret.snp, jan2$Ret.imab5)`|`r  cor(jan2$Ret.snp, jan2$Ret.imab5p)`|`r  cor(jan2$Ret.snp, jan2$Ret.dolar)`|`r  cor(jan2$Ret.snp, jan2$Ret.di19)`|`r  cor(jan2$Ret.snp, jan2$Ret.di23)`
+Ret.imab5 | `r  cor(jan2$Ret.imab5, jan2$Ret.ibov)`|`r  cor(jan2$Ret.imab5, jan2$Ret.snp)`|`r  cor(jan2$Ret.imab5, jan2$Ret.imab5)`|`r  cor(jan2$Ret.imab5, jan2$Ret.imab5p)`|`r  cor(jan2$Ret.imab5, jan2$Ret.dolar)`|`r  cor(jan2$Ret.imab5, jan2$Ret.di19)`|`r  cor(jan2$Ret.imab5, jan2$Ret.di23)`
+Ret.imab5p | `r  cor(jan2$Ret.imab5p, jan2$Ret.ibov)`|`r  cor(jan2$Ret.imab5p, jan2$Ret.snp)`|`r  cor(jan2$Ret.imab5p, jan2$Ret.imab5)`|`r  cor(jan2$Ret.imab5p, jan2$Ret.imab5p)`|`r  cor(jan2$Ret.imab5p, jan2$Ret.dolar)`|`r  cor(jan2$Ret.imab5p, jan2$Ret.di19)`|`r  cor(jan2$Ret.imab5p, jan2$Ret.di23)`
+Ret.dolar | `r  cor(jan2$Ret.dolar, jan2$Ret.ibov)`|`r  cor(jan2$Ret.dolar, jan2$Ret.snp)`|`r  cor(jan2$Ret.dolar, jan2$Ret.imab5)`|`r  cor(jan2$Ret.dolar, jan2$Ret.imab5p)`|`r  cor(jan2$Ret.dolar, jan2$Ret.dolar)`|`r  cor(jan2$Ret.dolar, jan2$Ret.di19)`|`r  cor(jan2$Ret.dolar, jan2$Ret.di23)`
+Ret.di19 | `r  cor(jan2$Ret.di19, jan2$Ret.ibov)`|`r  cor(jan2$Ret.di19, jan2$Ret.snp)`|`r  cor(jan2$Ret.di19, jan2$Ret.imab5)`|`r  cor(jan2$Ret.di19, jan2$Ret.imab5p)`|`r  cor(jan2$Ret.di19, jan2$Ret.dolar)`|`r  cor(jan2$Ret.di19, jan2$Ret.di19)`|`r  cor(jan2$Ret.di19, jan2$Ret.di23)`
+Ret.di23 | `r  cor(jan2$Ret.di23, jan2$Ret.ibov)`|`r  cor(jan2$Ret.di23, jan2$Ret.snp)`|`r  cor(jan2$Ret.di23, jan2$Ret.imab5)`|`r  cor(jan2$Ret.di23, jan2$Ret.imab5p)`|`r  cor(jan2$Ret.di23, jan2$Ret.dolar)`|`r  cor(jan2$Ret.di23, jan2$Ret.di19)`|`r  cor(jan2$Ret.di23, jan2$Ret.di23)`
+
+**Matriz de correlacoes entre os fatores Janela 3:**
+
+Fator| Ret.ibov| Ret.snp| Ret.imab5| Ret.imab5p|Ret.dolar|Ret.di21|Ret.di25
+------------- | -------------| -------------| -------------| -------------| -------------| -------------| -------------
+Ret.ibov | `r  cor(jan3$Ret.ibov, jan3$Ret.ibov)`|`r  cor(jan3$Ret.ibov, jan3$Ret.snp)`|`r  cor(jan3$Ret.ibov, jan3$Ret.imab5)`|`r  cor(jan3$Ret.ibov, jan3$Ret.imab5p)`|`r  cor(jan3$Ret.ibov, jan3$Ret.dolar)`|`r  cor(jan3$Ret.ibov, jan3$Ret.di21)`|`r  cor(jan3$Ret.ibov, jan3$Ret.di25)`
+Ret.snp | `r  cor(jan3$Ret.snp, jan3$Ret.ibov)`|`r  cor(jan3$Ret.snp, jan3$Ret.snp)`|`r  cor(jan3$Ret.snp, jan3$Ret.imab5)`|`r  cor(jan3$Ret.snp, jan3$Ret.imab5p)`|`r  cor(jan3$Ret.snp, jan3$Ret.dolar)`|`r  cor(jan3$Ret.snp, jan3$Ret.di21)`|`r  cor(jan3$Ret.snp, jan3$Ret.di25)`
+Ret.imab5 | `r  cor(jan3$Ret.imab5, jan3$Ret.ibov)`|`r  cor(jan3$Ret.imab5, jan3$Ret.snp)`|`r  cor(jan3$Ret.imab5, jan3$Ret.imab5)`|`r  cor(jan3$Ret.imab5, jan3$Ret.imab5p)`|`r  cor(jan3$Ret.imab5, jan3$Ret.dolar)`|`r  cor(jan3$Ret.imab5, jan3$Ret.di21)`|`r  cor(jan3$Ret.imab5, jan3$Ret.di25)`
+Ret.imab5p | `r  cor(jan3$Ret.imab5p, jan3$Ret.ibov)`|`r  cor(jan3$Ret.imab5p, jan3$Ret.snp)`|`r  cor(jan3$Ret.imab5p, jan3$Ret.imab5)`|`r  cor(jan3$Ret.imab5p, jan3$Ret.imab5p)`|`r  cor(jan3$Ret.imab5p, jan3$Ret.dolar)`|`r  cor(jan3$Ret.imab5p, jan3$Ret.di21)`|`r  cor(jan3$Ret.imab5p, jan3$Ret.di25)`
+Ret.dolar | `r  cor(jan3$Ret.dolar, jan3$Ret.ibov)`|`r  cor(jan3$Ret.dolar, jan3$Ret.snp)`|`r  cor(jan3$Ret.dolar, jan3$Ret.imab5)`|`r  cor(jan3$Ret.dolar, jan3$Ret.imab5p)`|`r  cor(jan3$Ret.dolar, jan3$Ret.dolar)`|`r  cor(jan3$Ret.dolar, jan3$Ret.di21)`|`r  cor(jan3$Ret.dolar, jan3$Ret.di25)`
+Ret.di21 | `r  cor(jan3$Ret.di21, jan3$Ret.ibov)`|`r  cor(jan3$Ret.di21, jan3$Ret.snp)`|`r  cor(jan3$Ret.di21, jan3$Ret.imab5)`|`r  cor(jan3$Ret.di21, jan3$Ret.imab5p)`|`r  cor(jan3$Ret.di21, jan3$Ret.dolar)`|`r  cor(jan3$Ret.di21, jan3$Ret.di21)`|`r  cor(jan3$Ret.di21, jan3$Ret.di25)`
+Ret.di25 | `r  cor(jan3$Ret.di25, jan3$Ret.ibov)`|`r  cor(jan3$Ret.di25, jan3$Ret.snp)`|`r  cor(jan3$Ret.di25, jan3$Ret.imab5)`|`r  cor(jan3$Ret.di25, jan3$Ret.imab5p)`|`r  cor(jan3$Ret.di25, jan3$Ret.dolar)`|`r  cor(jan3$Ret.di25, jan3$Ret.di21)`|`r  cor(jan3$Ret.di25, jan3$Ret.di25)`
+
+
 ```{r regres, echo = T, eval = T, include = T}
 # Regressão linear OLS
 ## Regressão da janela 1 (2016)
@@ -164,6 +279,8 @@ regres3 <- lm(Ret.verde~Ret.ibov+Ret.snp+Ret.imab5+Ret.imab5p+
                Ret.dolar+Ret.di21+Ret.di25, data=jan3)
 summary(regres3)
 ```
+
+
 
 ```{r histograma, echo = F, eval = T, include = F}
 # Histogramas dos retornos
