@@ -3,9 +3,9 @@ title: "Asset-allocation"
 author: "Arthur Paolucci"
 date: "02/10/2020"
 output:
+  html_document: default
   word_document: default
   pdf_document: default
-  html_document: default
 ---
 
 ```{r setup, include=F}
@@ -36,13 +36,42 @@ lapply(packset, require, character.only = TRUE)
 
 # Asset Allocation Problem
 
-### Problema
+### 1. Problema
 
-### Revisão Bibliográfica
+Este trabalho tem por objetivo estimar, dada uma janela de tempo, a alocação de um fundo de investimentos multimercado no Brasil, ou seja, determinar a exposição da sua carteira a diferentes fatores de risco. A motivação para tal, se dá pelo fato de que a Comissão de Valores Mobiliários (CVM) divulga a alocação dos fundos depois de um período de três meses, enquanto o mercado precisa saber como os fundos estão posicionados no momento da decisão de investimento.
 
-### Base de Dados
+### 2. Revisão Bibliográfica
 
-##### Importando os dados da Economatica
+É amplamente conhecido que os retornos de uma carteira ou portfólio de mercado estão relacionados com diferentes fatores de risco. Observa-se na literatura a utilização de modelos de múltiplos fatores para medir e administrar a exposição a esses riscos. Esses fatores podem ser, por exemplo, indicadores macroeconômicos como taxa de juros, taxa de inflação, índices de preços de mercados internos ou externos, etc.
+
+Existe um consenso de que a alocação em classes de ativos é a principal responsável pela variação nos retornos de uma carteira de investimentos. Isso é especialmente verdade se essa carteira é bem diversificada, ou seja, investe em vários fundos, que por sua vez investem em vários ativos.
+
+Os fatores de risco utilizados neste trabalho foram obtidos a partir da “tropicalização” dos fatores utilizados por Sharpe na sua publicação “Asset Allocation: Management Style and Performance Measurement”. 
+Em seu trabalho, o autor busca estimar o “estilo” (alocação em classes de ativos) de diferentes fundos a partir do seguinte modelo de fatores:
+
+ $$(1) R_i = [b_{i1}\tilde{F_1}+b_{i2}\tilde{F_2}+...+b_{in}\tilde{F_n}] + \tilde{e_i}$$
+
+Neste modelo, cada fator representa o retorno de uma classe de ativos e interpreta-se os coeficientes como a sensibilidade da carteira aos fatores de risco escolhidos. É importante destacar que os coeficientes devem somar 1 (ou 100%), já que o retorno de cada ativo investido pelo fundo pode ser decomposto nos fatores de risco e o retorno do fundo deve ser explicado pela soma dos retornos de todos os ativos investidos por ele.
+
+De fato, a soma dos termos em chaves na equação 1 pode ser interpretada como o retorno atribuído à escolha das classes de ativo a que o fundo está exposto, enquanto o resíduo pode ser explicado como o retorno atribuído à seleção de ativos. Apesar de somarem 100%, os coeficientes não devem ser confundidos com os pesos de uma carteira, já que os fatores representam diferentes riscos e não ativos.
+
+**Sugestão AP:**
+**> Explicar a seleção (“tropicalização”) dos fatores **
+
+**(Tabela tropicalização - sugestão: comparar escolhas do sharpe com as nossas)**
+
+**> Explicar a escolha de janelas de 70 dias e dos períodos selecionados**
+
+### 3. Base de Dados
+
+Todos os dados utilizados neste trabalho foram obtidos na base Economática, acessível para os alunos da FGV, ou calculados a partir da base. Na plataforma, é possível obter o histórico de preços da cota de fundos de investimento e ainda de diversos indicadores de mercado. Os dados obtidos na plataforma foram exportados para uma planilha e, em seguida, importados para o R. No programa em R, foram realizados procedimentos de limpeza e organização dos dados e foram calculados os retornos para cada variável utilizada no modelo pelo método dos retornos logarítmicos. A tabela abaixo descreve as variáveis presentes na base de dados utilizada:
+
+Atributo|Descrição|Base/ Calculado|Fonte/ Cálculo|Papel na Regressão|Tipo|Domínio
+--------|--------|--------|--------|--------|--------|--------|--------
+Cota|Preço da cota do fundo "Verde..." em reais a.d.|Base|Economática|-|Numérico|$\Re+$
+
+
+#### Importando os dados da Economatica
 
 A FGV disponibiliza aos alunos o acesso à base de dados economatica. Para esse trabalho temos o interesse em obter as cotações do fundo analisado (JGP Strategy...) e dos índices que servirão como proxy para os fatores de risco.
 
@@ -153,7 +182,7 @@ str(jan3)
 ```
 
 
-```{r statisticas, echo = T, eval = T, include = T}
+```{r statisticas, echo = T, eval = T, include = F}
 #Para c/ janela de tempo de cada fator calculamos as estatiscas descritivas.
 
 ## Janela 1:
@@ -191,6 +220,8 @@ kurt3 <- with(jan3, cbind(kurtosis(Ret.verde), kurtosis(Ret.ibov), kurtosis(Ret.
 
 corr3 <- with(jan3, cbind(cor(Ret.verde,Ret.verde), cor(Ret.verde,Ret.ibov), cor(Ret.verde,Ret.snp), cor(Ret.verde,Ret.imab5), cor(Ret.verde,Ret.imab5p), cor(Ret.verde,Ret.dolar), cor(Ret.verde,Ret.di21), cor(Ret.verde,Ret.di25)))
 ```
+
+Os fatores “tropicalizados” utilizados no modelo são as taxas de retorno calculadas, dessa forma a hipótese de independência entre as observações da amostra aleatória do método de mínimos quadrados ordinários não é violada. No Item 4.3. a validade dessa hipótese é analisada em detalhe. As tabelas abaixo apresentam as estatísticas descritivas, para cada janela, de cada variável incluída no modelo de fatores:
 
 **Estatisticas Janela 1:**
 
@@ -231,6 +262,184 @@ Ret.dolar | `r  media3[,6]`|`r  ep3[,6]`|`r  skew3[,6]`|`r  kurt3[,6]`| `r  corr
 Ret.di21 | `r  media3[,7]`|`r  ep3[,7]`|`r  skew3[,7]`|`r  kurt3[,7]`| `r  corr3[,7]`
 Ret.di25 | `r  media3[,8]`|`r  ep3[,8]`|`r  skew3[,8]`|`r  kurt3[,8]`| `r  corr3[,8]`
 
+
+
+```{r histograma, echo = F, eval = T, include = F}
+# Histogramas dos retornos
+## Vale fazer um facet grid dos retornos?
+his <- jan1 %>%
+    ggplot(aes(x=Ret.ibov)) +
+        geom_histogram(binwidth=0.01, fill="#69b3a2", 
+                       color="#e9ecef", alpha=0.9) +
+        xlab("Daily Returns") +
+        ylab("Frequency")
+his
+```
+
+```{r , echo = F, eval = T, include = F}
+# Histogramas dos retornos
+## Vale fazer um facet grid dos retornos?
+### eu acho melhor para mostrar que a media do erro é zero utilizar os residuos.
+his <- jan1 %>%
+    ggplot(aes(x=Ret.ibov)) +
+        geom_histogram(binwidth=0.01, fill="#69b3a2", 
+                       color="#e9ecef", alpha=0.9) +
+        xlab("Daily Returns") +
+        ylab("Frequency")
+his
+```
+### 4 Metodologia (OLS)
+
+Cochrane (p. 435, 2005) explica que os retornos podem ser observados como um conjunto de dados “cross section” ou dados em séries temporais, dependendo da pergunta que se queira responder. Neste caso, estuda-se o nível de retorno dado certos fatores de risco num instante t, dito isso é adequado o uso do método clássico de OLS para obter os coeficientes dos fatores do modelo.
+
+A seguir, vamos escrever o modelo a estimar pelo método de OLS, calculamos a regressão linear para cada janela de tempo e vemos se são cumpridas as propriedades algébricas dos estimadores de OLS para que sejam aceitas como certas as hipóteses de Gauss-Markov.
+
+
+#### 4.1 Relação Linear (nos coeficientes)
+
+O modelo populacional é descrito como:
+
+$$ ret.verde = \beta_1ret.ibov+\beta_2ret.snp+\beta_3ret.imab5+\beta_4ret.imab5p+\beta_5 ret.dolar+\beta_6ret.di_{1ano}+\beta_7ret.di_{3anos}+\mu$$
+O modelo é linear nos parâmetros, vamos estimar os coeficientes do modelo utilizando os estimadores de OLS.
+
+```{r regres, echo = T, eval = T, include = T}
+# Regressão linear OLS
+## Regressão da janela 1 (2016)
+regres1 <- lm(Ret.verde~Ret.ibov+Ret.snp+Ret.imab5+Ret.imab5p+
+               Ret.dolar+Ret.di17+Ret.di21, data=jan1)
+b1.hat<-coef(regres1) #coeficientes
+regres1.hat<-fitted(regres1) #retorno previsto
+u1.hat<-resid(regres1) #residuos
+summary(regres1)
+
+## Regressão da janela 2 (2018)
+regres2 <- lm(Ret.verde~Ret.ibov+Ret.snp+Ret.imab5+Ret.imab5p+
+               Ret.dolar+Ret.di19+Ret.di23, data=jan2)
+b2.hat<-coef(regres2) #coeficientes
+regres2.hat<-fitted(regres2) #retorno previsto
+u2.hat<-resid(regres2) #residuos
+summary(regres2)
+
+## Regressão da janela 3 (2020)
+regres3 <- lm(Ret.verde~Ret.ibov+Ret.snp+Ret.imab5+Ret.imab5p+
+               Ret.dolar+Ret.di21+Ret.di25, data=jan3)
+b3.hat<-coef(regres3) #coeficientes
+regres3.hat<-fitted(regres3) #retorno previsto
+u3.hat<-resid(regres3) #residuos
+summary(regres3)
+```
+
+As hipóteses de Gauss-Markov para que o método de OLS seja não viesado são:
+
+#### 4.2 Média Condicional Zero
+
+O erro $\mu$ tem um valor esperado igual a zero, dados quaisquer valores das variáveis independentes. Em formula $E(\mu|F_1, F_2,...,F_7)$.
+
+#### 4.3 Amostra Aleatória (iid)
+
+Assumimos que nossa amostra é aleatória e independente. Segundo Cochrane, o preço de um ativo é dado por p_t+1 =p_t +ε_t+1, ou seja, se σ2(ε )=constante os preços seguem um "random walk". Essa definição é amplamente utilizada na teoria de finanças tradicionais e quer dizer que, se os mercados financeiros são eficientes, o preço de amanhã deve ser explicado pelo preço de hoje (que reflete toda a informação disponível sobre esse ativo) mais um choque imprevisível. Intuitivamente, se o preço hoje está muito menor que o preço de amanhã, os agentes vão antecipar esse aumento de preço e tentar comprar esse ativo, levando a um aumento de preço hoje e não amanhã. Sendo assim, os retornos de um ativo devem ser tão imprevisíveis como jogar uma moeda.
+
+#### 4.4 Multicolinearidade não-perfeita
+
+A hipóteses RLM.3 Colinearidade não perfeita diz:
+ “Na amostra (e, portanto, na população) nenhuma das variáveis independentes é constante, e não há relações lineares exatas entre as variáveis independentes”
+ 
+A continuação vemos, para cada janela de tempo (1, 2 e 3), que as correlações entre as variáveis independentes não são perfeitas, por tanto não há relações lineares entre elas.
+
+$\underline{Testando\space as\space propiedades\space algebraicas:}$
+
+```{r rlm.4, echo = F, eval = T, include = F}
+
+#media do residuo janela 1
+
+muhat1 = mean(u1.hat)
+
+#media do residuo janela 2
+
+muhat2 = mean(u2.hat)
+
+#media do residuo janela 3
+
+muhat3 = mean(u3.hat)
+```
+
+* Propriedade 1: $E(\hat{\mu}|F_1, F_2,...,F_7)$
+Os valores esperados dos resíduos da Janela 1, 2 e 3 são:
+
+* *$E(\hat{\mu_1})$ = `r muhat1`*
+
+* *$E(\hat{\mu_2})$ = `r muhat2`*
+
+* *$E(\hat{\mu_3})$ = `r muhat3`*
+
+Podemos observar que os valores esperados dos resíduos para as três janelas de tempo estão muito perto de zero e por tanto a hipóteses de média condicional zero é cumprida.
+
+
+* Propriedade 2: $cov(F_j, \hat{\mu}) = 0$
+
+```{r rlm.5, echo = F, eval = T, include = F}
+
+#correlacao das clases com o residuo janela 1
+
+cov1 = cbind(cov(jan1$Ret.ibov, u1.hat), cov(jan1$Ret.snp, u1.hat), cov(jan1$Ret.imab5, u1.hat), cov(jan1$Ret.imab5p, u1.hat), cov(jan1$Ret.dolar, u1.hat), cov(jan1$Ret.di17, u1.hat), cov(jan1$Ret.di21, u1.hat))
+
+#media do residuo janela 2
+
+cov2 = cbind(cov(jan2$Ret.ibov, u2.hat), cov(jan2$Ret.snp, u2.hat), cov(jan2$Ret.imab5, u2.hat), cov(jan2$Ret.imab5p, u2.hat), cov(jan2$Ret.dolar, u2.hat), cov(jan2$Ret.di19, u2.hat), cov(jan2$Ret.di23, u2.hat))
+
+#media do residuo janela 3
+
+cov3 = cbind(cov(jan3$Ret.ibov, u3.hat), cov(jan3$Ret.snp, u3.hat), cov(jan3$Ret.imab5, u3.hat), cov(jan3$Ret.imab5p, u3.hat), cov(jan3$Ret.dolar, u3.hat), cov(jan3$Ret.di21, u3.hat), cov(jan3$Ret.di25, u3.hat))
+```
+
+**Janela 1:**
+
+**Fator j**|**$Cov(F_j, \hat{\mu_j})$**
+-------|-------
+ret.ibov| `r cov1[,1]`
+ret.snp| `r cov1[,2]`
+ret.imab5| `r cov1[,3]`
+ret.imab5p| `r cov1[,4]`
+ret.dolar| `r cov1[,5]`
+ret.di17| `r cov1[,6]`
+ret.di21| `r cov1[,7]`
+
+**Janela 2:**
+
+**Fator j**|**$cov(F_j, \hat{\mu_j})$**
+-------|-------
+ret.ibov| `r cov2[,1]`
+ret.snp| `r cov2[,2]`
+ret.imab5| `r cov2[,3]`
+ret.imab5p| `r cov2[,4]`
+ret.dolar| `r cov2[,5]`
+ret.di17| `r cov2[,6]`
+ret.di21| `r cov2[,7]`
+
+**Janela 3:**
+
+**Fator j**|**$cov(F_j, \hat{\mu_j})$**
+-------|-------
+ret.ibov| `r cov3[,1]`
+ret.snp| `r cov3[,2]`
+ret.imab5| `r cov3[,3]`
+ret.imab5p| `r cov3[,4]`
+ret.dolar| `r cov3[,5]`
+ret.di17| `r cov3[,6]`
+ret.di21| `r cov3[,7]`
+
+Podemos observar que todos os valores estão perto do zero, pelo qual assumimos que as hipóteses são verdadeiras.
+
+* Propriedade 3: O ponto $(\tilde{F_1}, \tilde{F_2}, ..., \tilde{F_7})$ esta sempre sobre a reta de regressão de OLS $\tilde{R} = \tilde{F_1} + \tilde{F_2} + ... + \tilde{F_7}$
+
+|**Janela 1**|**Janela 2**|**Janela 3**
+-----|-----|-----|-----
+$Fitted\space Value =$| `r mean(fitted(regres1))`| `r mean(fitted(regres2))`| `r mean(fitted(regres3))`
+$\bar{Y}=$| `r mean(jan1$Ret.verde)`| `r mean(jan2$Ret.verde)`| `r mean(jan3$Ret.verde)`
+
+
+Também podemos observar que as correlações entre as variáveis independentes não são perfeitas:
+
 **Matriz de correlacoes entre os fatores Janela 1:**
 
 Fator| Ret.ibov| Ret.snp| Ret.imab5| Ret.imab5p|Ret.dolar|Ret.di17|Ret.di21
@@ -267,50 +476,7 @@ Ret.dolar | `r  cor(jan3$Ret.dolar, jan3$Ret.ibov)`|`r  cor(jan3$Ret.dolar, jan3
 Ret.di21 | `r  cor(jan3$Ret.di21, jan3$Ret.ibov)`|`r  cor(jan3$Ret.di21, jan3$Ret.snp)`|`r  cor(jan3$Ret.di21, jan3$Ret.imab5)`|`r  cor(jan3$Ret.di21, jan3$Ret.imab5p)`|`r  cor(jan3$Ret.di21, jan3$Ret.dolar)`|`r  cor(jan3$Ret.di21, jan3$Ret.di21)`|`r  cor(jan3$Ret.di21, jan3$Ret.di25)`
 Ret.di25 | `r  cor(jan3$Ret.di25, jan3$Ret.ibov)`|`r  cor(jan3$Ret.di25, jan3$Ret.snp)`|`r  cor(jan3$Ret.di25, jan3$Ret.imab5)`|`r  cor(jan3$Ret.di25, jan3$Ret.imab5p)`|`r  cor(jan3$Ret.di25, jan3$Ret.dolar)`|`r  cor(jan3$Ret.di25, jan3$Ret.di21)`|`r  cor(jan3$Ret.di25, jan3$Ret.di25)`
 
-
-```{r regres, echo = T, eval = T, include = T}
-# Regressão linear OLS
-## Regressão da janela 1 (2016)
-regres1 <- lm(Ret.verde~Ret.ibov+Ret.snp+Ret.imab5+Ret.imab5p+
-               Ret.dolar+Ret.di17+Ret.di21, data=jan1)
-summary(regres1)
-
-## Regressão da janela 2 (2018)
-regres2 <- lm(Ret.verde~Ret.ibov+Ret.snp+Ret.imab5+Ret.imab5p+
-               Ret.dolar+Ret.di19+Ret.di23, data=jan2)
-summary(regres2)
-
-## Regressão da janela 3 (2020)
-regres3 <- lm(Ret.verde~Ret.ibov+Ret.snp+Ret.imab5+Ret.imab5p+
-               Ret.dolar+Ret.di21+Ret.di25, data=jan3)
-summary(regres3)
-```
-
-
-
-```{r histograma, echo = F, eval = T, include = F}
-# Histogramas dos retornos
-## Vale fazer um facet grid dos retornos?
-his <- jan1 %>%
-    ggplot(aes(x=Ret.ibov)) +
-        geom_histogram(binwidth=0.01, fill="#69b3a2", 
-                       color="#e9ecef", alpha=0.9) +
-        xlab("Daily Returns") +
-        ylab("Frequency")
-his
-```
-
-### Metodologia (OLS)
-
-##### 1. Relação Linear (nos coeficientes)
-
-##### 2. Média Condicional Zero
-
-##### 3. Amostra Aleatória (iid)
-
-##### 4. Multicolinearidade não-perfeita
-
-##### 5. Homocedasticidade
+#### 4.5 Homocedasticidade
 
 
 ### Report Results
