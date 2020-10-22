@@ -1,11 +1,10 @@
 ---
 title: "Asset-allocation"
-author: "Arthur Paolucci"
+author: "Arthur Paolucci, Felipe Nascimbeni Cosi, Carlos Tiburcio, Ignacio Bergallo"
 date: "02/10/2020"
 output:
   html_document: default
   word_document: default
-  pdf_document: default
 ---
 
 ```{r setup, include=F}
@@ -27,8 +26,8 @@ options(OutDec = ".", round = 2, digits = c(5,2))
 ```
 
 ```{r pacotes, echo = T, eval = T, message = T, warning = T, include = F}
-# Pacotes populares: readxl, dplyr, tidyr, stringr, lubridate, plotly, dygraphs, data.table, tibble, zoo, xts, quantmod, BETs, sidrar. 
-packset = c("readxl","tidyr","dplyr","lubridate","xts","PerformanceAnalytics","plotly","dygraphs","dplyr", "quadprog")
+# Pacotes populares: readxl, dplyr, tidyr, stringr, lubridate, plotly, dygraphs, data.table, tibble, zoo, xts, quantmod, BETs, sidrar, car. 
+packset = c("readxl","tidyr","dplyr","lubridate","xts","PerformanceAnalytics","plotly","dygraphs","dplyr", "quadprog", "car")
 not_inst <- packset[!(packset %in% installed.packages()[,"Package"])]
 if(length(not_inst)) install.packages(not_inst)
 lapply(packset, require, character.only = TRUE)
