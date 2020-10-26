@@ -1,5 +1,5 @@
 ---
-title: "Asset-allocation"
+title: "Uso do Modelo de Fatores na Determinação da Alocação de Fundos Multimercado Brasileiros"
 author: "Arthur Paolucci, Felipe Nascimbeni Cosi, Carlos Tiburcio, Ignacio Bergallo"
 date: "02/10/2020"
 output:
@@ -27,50 +27,125 @@ options(OutDec = ".", round = 2, digits = c(5,2))
 
 ```{r pacotes, echo = T, eval = T, message = T, warning = T, include = F}
 # Pacotes populares: readxl, dplyr, tidyr, stringr, lubridate, plotly, dygraphs, data.table, tibble, zoo, xts, quantmod, BETs, sidrar, car. 
-packset = c("readxl","tidyr","dplyr","lubridate","xts","PerformanceAnalytics","plotly","dygraphs","dplyr", "quadprog", "car")
+packset = c("readxl","tidyr","dplyr","lubridate","xts","PerformanceAnalytics","plotly","dygraphs","dplyr", "quadprog", "car", "lmtest")
 not_inst <- packset[!(packset %in% installed.packages()[,"Package"])]
 if(length(not_inst)) install.packages(not_inst)
 lapply(packset, require, character.only = TRUE)
 ```
 
-# Asset Allocation Problem
+# Uso do Modelo de Fatores na Determinação da Alocação de Fundos Multimercado Brasileiros
 
-### 1. Problema
+### Objetivo
 
-Este trabalho tem por objetivo estimar, dada uma janela de tempo, a alocação de um fundo de investimentos multimercado no Brasil, ou seja, determinar a exposição da sua carteira a diferentes fatores de risco. A motivação para tal, se dá pelo fato de que a Comissão de Valores Mobiliários (CVM) divulga a alocação dos fundos depois de um período de três meses, enquanto o mercado precisa saber como os fundos estão posicionados no momento da decisão de investimento.
+Este trabalho tem por objetivo estimar, dada uma curta janela de tempo, a alocação de um fundo de investimentos multimercado no Brasil, ou seja, determinar de forma simples e prática a exposição da sua carteira a diferentes fatores de risco selecionados.
+ 
+A motivação para tal, se dá pelo fato de que a Comissão de Valores Mobiliários (CVM) divulga a alocação dos fundos com uma defasagem de três meses, enquanto o mercado tem o interesse de saber como os fundos estão posicionados no momento. O formato de divulgação da CVM e a forma como as estratégias das carteiras dos fundos são compostas, utilizando posições compradas e vendidas de uma quantidade grande de ativos e derivativos, dificulta muito a leitura e o entendimento das suas exposições.
+ 
+Esse interesse pode ser motivado pelo trabalho de monitoramento dos cotistas dos fundos, sendo estes alocadores de recursos profissionais ou mesmo pessoas físicas e por investidores profissionais como informação auxiliar para gestão de carteiras.
+ 
+Dado o escopo e o tempo para se desenvolver o trabalho, um fundo do universo de fundos multimercados macro foi selecionado para ser usado como teste de validação do modelo. O Fundo Verde FIM, é um fundo multimercado macro carregamento, gerido pelo lendário gestor Luís Stuhlberger, mundialmente reconhecido pela sua excelente performance ao longo de mais de duas décadas.
+ 
+A validação do modelo é feita com a comparação dos seus resultados com as cartas mensais escritas pelo gestor, onde são comentadas as principais posições e estratégia do fundo.
 
-### 2. Revisão Bibliográfica
+
+### Revisão Bibliográfica
 
 É amplamente conhecido que os retornos de uma carteira ou portfólio de mercado estão relacionados com diferentes fatores de risco. Observa-se na literatura a utilização de modelos de múltiplos fatores para medir e administrar a exposição a esses riscos. Esses fatores podem ser, por exemplo, indicadores macroeconômicos como taxa de juros, taxa de inflação, índices de preços de mercados internos ou externos, etc.
 
-Existe um consenso de que a alocação em classes de ativos é a principal responsável pela variação nos retornos de uma carteira de investimentos. Isso é especialmente verdade se essa carteira é bem diversificada, ou seja, investe em vários fundos, que por sua vez investem em vários ativos.
+Existe um consenso entre diversos especialistas que a alocação nas diferentes classes de ativos é a principal responsável pela composição dos retornos de uma carteira de investimentos. Isso é especialmente verdade se essa carteira é bem diversificada, ou seja, investe em vários fundos, que por sua vez investem em vários ativos.
 
-Os fatores de risco utilizados neste trabalho foram obtidos a partir da “tropicalização” dos fatores utilizados por Sharpe na sua publicação “Asset Allocation: Management Style and Performance Measurement”. 
-Em seu trabalho, o autor busca estimar o “estilo” (alocação em classes de ativos) de diferentes fundos a partir do seguinte modelo de fatores:
+Os fatores de risco utilizados neste trabalho foram obtidos a partir da “tropicalização” dos fatores utilizados por Sharpe em sua publicação “Asset Allocation: Management Style and Performance Measurement”. Em seu trabalho, o autor busca estimar o “estilo” (alocação em classes de ativos) de diferentes fundos a partir do seguinte modelo de fatores:
 
- $$(1) R_i = [b_{i1}\tilde{F_1}+b_{i2}\tilde{F_2}+...+b_{in}\tilde{F_n}] + \tilde{e_i}$$
 
-Neste modelo, cada fator representa o retorno de uma classe de ativos e interpreta-se os coeficientes como a sensibilidade da carteira aos fatores de risco escolhidos. É importante destacar que os coeficientes devem somar 1 (ou 100%), já que o retorno de cada ativo investido pelo fundo pode ser decomposto nos fatores de risco e o retorno do fundo deve ser explicado pela soma dos retornos de todos os ativos investidos por ele.
+ $$R_i = [b_{i1}\tilde{F_1}+b_{i2}\tilde{F_2}+...+b_{in}\tilde{F_n}] + \tilde{e_i} \space (1)$$
 
-De fato, a soma dos termos em chaves na equação 1 pode ser interpretada como o retorno atribuído à escolha das classes de ativo a que o fundo está exposto, enquanto o resíduo pode ser explicado como o retorno atribuído à seleção de ativos. Apesar de somarem 100%, os coeficientes não devem ser confundidos com os pesos de uma carteira, já que os fatores representam diferentes riscos e não ativos.
+Neste modelo, cada fator representa o retorno de uma classe de ativos e interpreta-se os coeficientes como a sensibilidade da carteira aos fatores de risco escolhidos.
+ 
+A escolha dos fatores tem grande influência no sucesso do modelo, por isso deve ser feita em linha com as classes e os ativos mais utilizados pelos gestores de fundos multimercados com estratégias macro. Outro fator importante é o equilíbrio correto com relação ao número de fatores. Se por um lado, um número muito alto dificultaria a análise e interpretação dos resultados, por outro, um número pequeno não traria informações relevantes para os interessados. Idealmente os fatores devem ser ativos ou índices, passíveis de investimento ou de fácil replicação, tanto para viabilizar as regressões, quanto para a informação ser útil aos interessados.
+ 
+Em seu trabalho, Sharpe propõe fatores amplamente discutidos e utilizados para carteiras de fundos americanos, com os diferentes títulos emitidos pelo governo americano e a separação dos ativos de renda variável em alguns índices para ativos americanos, ações europeias e ações japonesas.
 
-**Sugestão AP:**
-**> Explicar a seleção (“tropicalização”) dos fatores **
 
-**(Tabela tropicalização - sugestão: comparar escolhas do sharpe com as nossas)**
+###### Tabela 1: Fatores utilizados por Sharpe (1992)  “Asset Allocation: Management Style and Performance Measurement”
 
-**> Explicar a escolha de janelas de 70 dias e dos períodos selecionados**
+
+Class | Description|Index
+------|------------|------------
+Bills | Cash-equivalents with less than 3 months to maturity | Salomon Brothers' 90-day Treasury bill index
+Intermediate-term Government Bonds| Government bonds with less than 10 years to maturity | Lehman Brothers' Intermediate-term Government Bond Index  
+Long-term Government Bonds|Government bonds with more than 10 years to maturity|Lehman Brothers' Long-term Government Bond Index
+Corporate Bonds|Corporate bonds with ratings of at least Baa by Moody's or BBB by Standard & Poor's|Lehman Brothers' Corporate Bond Index
+Mortgage-Related Securities|Mortgage-backed and related securities|Lehman Brothers'Mortgage-Backed Securities Index
+Large-Capitalization Value Stocks|Stocks in Standard and Poor's 500-stock index with high book-to-price ratios|Sharpe/BARRA Value Stock Index
+Large-Capitalization Growth Stocks|Stocks in Standard and Poor's 500-stock index with low book-to-price ratios|Sharpe/BARRA Growth Stock Index
+Medium-Capitalization Stocks|Stocks in the top 80% of capitalization in the U.S. equity universe after the exclusion of stocks in Standard and Poor's 500 stock index | Sharpe/BARRA Medium Capitalization Stock Index
+Small-Capitalization Stocks|Stocks in the bottom 20% of capitalization in the U.S. equity universe after the exclusion of stocks in Standard and Poor's 500 stock index | Sharpe/BARRA Small Capitalization Stock Index
+Non-U.S. Bonds|Bonds outside the U.S. and Canada | Salomon Brothers' Non-U.S. Government Bond Index
+European Stocks | European and non-Japanese Pacific Basin stocks | FTA Euro-Pacific Ex Japan Index
+Japanese Stocks | Japanese Stocks|FTA Japan Index
+
+Para a realidade dos fundos multimercados de gestores brasileiros, foi necessário realizar algumas adaptações nos fatores de forma a adaptá-los aos fatores e ativos disponíveis no mercado local e presentes nas carteiras dos gestores.
+ 
+Para as classes de Renda Fixa, além da segregação dos títulos emitidos pelo governo brasileiro pelos seus prazos, foi necessário a inclusão, além dos títulos pré-fixados, dos fatores relativos aos títulos indexados à inflação, ativos particularmente importantes no mercado brasileiro.
+
+Na Renda Variável, é sabido que o mercado brasileiro é muito menos líquido e desenvolvido em relação ao mercado norte americano, por este motivo não é simples identificar a abertura de diferentes fatores dentro da classe e nem sequer temos os índices para utilizar na regressão. Portanto o fator único utilizado para a classe local foi o Ibovespa. Para representar a exposição em ações globais, foi utilizado o SP500 (principal índice da bolsa norte americana) porque é um ativo negociado localmente e amplamente utilizado pelos gestores. Isso acontece porque o índice inclui as 500 maiores empresas da bolsa americana, mas que são empresas com exposição global, gerando a diversificação desejada.
+
+Outro fator incluído no modelo foi a exposição ao Dólar americano (USD), porque em países emergentes os gestores geralmente usam a venda da moeda local e a compra do USD como proteção para posições de risco.
+
+###### Tabela 2: Fatores utilizados no modelo de regressão proposto, após a “tropicalização”
+
+Fator|Descrição
+-----|-----
+Ibovespa | Exposição à bolsa local, por meio do principal índice da B3.
+SP500 |Exposição à bolsa global, por meio do principal índice da bolsa norte americana.
+IMAB-5 | Exposição ao juro real de curto/médio prazo, por meio do índice da Anbima.
+IMAB-5+ | Exposição ao juro real de longo prazo, por meio do índice da Anbima.
+USD | Exposição à moeda norte americana.
+Contrato Futuro de DI de 1 ano |Exposição ao juro pré-fixados de curto prazo, por meio do contrato futuro da expectativa da taxa de DI, com vencimento em 1 ano.
+Contrato Futuro de DI de 5 anos | Exposição ao juro pré-fixados de curto prazo, por meio do contrato futuro da expectativa da taxa de DI, com vencimento em 5 anos.
+
+Em seu trabalho “Estimando a Alocação de Fundos Multimercado Brasileiros – Métodos para Redução e Seleção de Modelos”, Lobo avalia diferentes modelos e diferentes tamanhos de janelas para a estimação dos fatores de risco que explicam os retornos de vários fundos multimercado brasileiros.
+
+Para o autor, as janelas de tempo não devem ser muito longas porque deseja-se determinar a posição do fundo em um momento específico, nem muito curtas,  para que a Lei Dos Grandes Números seja válida (amostra maior ou igual a trinta elementos). Esta janela, limitada em número de amostras e somado a quantidade de fatores do modelo fará com que o grau de liberdade do modelo seja diminuído.
+
+Com isso, Lobo realiza regressões lineares em janelas de 20, 30, 40, 50, 60 e 70 dias úteis para avaliar cada modelo. Nota-se que, para o modelo de MQO em particular, quanto maior a janela utilizada, menor é a soma dos resíduos, o que determina a janela de 70 dias a escolha ótima.
+ 
+Para fundos multimercado macro carregamento, como o estilo do Fundo Verde, podemos utilizar a janela mais longa testada por Lobo (de 70 dias),  porque são fundos que não alteram suas posições com extrema frequência.  
+
+Para estimar os coeficientes do modelo de fatores, desenvolvemos no Item 4 a metodologia de estimadores de MQO para três janelas de tempo diferentes. Uma forma de determinar quando o ativo está exposto a um determinado risco é quando o coeficiente beta do fator é significante e o teste de hipóteses diz que é diferente de zero com certo grau de significância.
+
+Uma vez rodadas as regressões e determinados os fatores significantes comparamos os resultados com as cartas mensais do gerente do fundo e os dados parciais da posição da carteira na CVM.
+
 
 ### 3. Base de Dados
 
-Todos os dados utilizados neste trabalho foram obtidos na base Economática, acessível para os alunos da FGV, ou calculados a partir da base. Na plataforma, é possível obter o histórico de preços da cota de fundos de investimento e ainda de diversos indicadores de mercado. Os dados obtidos na plataforma foram exportados para uma planilha e, em seguida, importados para o R. No programa em R, foram realizados procedimentos de limpeza e organização dos dados e foram calculados os retornos para cada variável utilizada no modelo pelo método dos retornos logarítmicos. A tabela abaixo descreve as variáveis presentes na base de dados utilizada:
+Todos os dados utilizados neste trabalho foram obtidos na base Economática, acessível para os alunos da FGV, ou calculados a partir da base. Na plataforma, é possível obter o histórico de preços da cota de fundos de investimento e ainda de diversos indicadores de mercado. Os dados obtidos na plataforma foram exportados para uma planilha e, em seguida, importados para o RStudio. No programa em R, foram realizados procedimentos de limpeza e organização dos dados e foram calculados os retornos para cada variável utilizada no modelo pelo método dos retornos logarítmicos. A tabela abaixo descreve as variáveis presentes na base de dados utilizada:
+
+###### Tabela 3: Descrição das variáveis
 
 Atributo|Descrição|Base/ Calculado|Fonte/ Cálculo|Papel na Regressão|Tipo|Domínio
 --------|--------|--------|--------|--------|--------|--------|--------
 Cota|Preço da cota do fundo "Verde..." em reais a.d.|Base|Economática|-|Numérico|$\Re+$
+Fechamento.imab5 | Nível de fechamento do IMA-B5 em pontos a.d.| Base | Economática | - | Numérico | $\Re+$
+Fechamento.imab5p | Nível de fechamento do IMA-B5+ em pontos a.d.| Base | Economática | - | Numérico | $\Re+$
+Fechamento.dolar | Nível de fechamento do Dólar Futuro em reais por mil dólares a.d.| Base | Economática | - | Numérico | $\Re+$
+Fechamento.di17 | Preço de fechamento do contrato DI de 1 dia com vencimento em jan/2017 em reais a.d. | Base | Economática | - | Numérico | $\Re+$
+Fechamento.di19 | Preço de fechamento do contrato DI de 1 dia com vencimento em jan/2019 em reais a.d.| Base | Economática | - | Numérico | $\Re+$
+Fechamento.di21 | Preço de fechamento do contrato DI de 1 dia com vencimento em jan/2021 em reais a.d.| Base | Economática | - | Numérico | $\Re+$
+Fechamento.di23 | Preço de fechamento do contrato DI de 1 dia com vencimento em jan/2023 em reais a.d.| Base | Economática | - | Numérico | $\Re+$
+Fechamento.di25 | Preço de fechamento do contrato DI de 1 dia com vencimento em jul/2025 em reais a.d.| Base | Economática | - | Numérico | $\Re+$
+Ret.ibov | Taxa de retorno diário do Ibovespa| Calculado| $$Log(\frac{P_{t+1}}{P_t})$$ | Variável dependente| Numérico | $\Re+$
+Ret.snp | Taxa de retorno diário do S&P500 | Calculado| $$Log(\frac{P_{t+1}}{P_t})$$ | Variável dependente| Numérico | $\Re+$
+Ret.imab5 | Taxa de retorno diário do IMA-B5| Calculado| $$Log(\frac{P_{t+1}}{P_t})$$ | Variável dependente| Numérico | $\Re+$
+Ret.imab5p | Taxa de retorno diário do IMA-B5+| Calculado| $$Log(\frac{P_{t+1}}{P_t})$$ | Variável dependente| Numérico | $\Re+$
+Ret.dolar | Taxa de retorno diário do Dólar Futuro| Calculado| $$Log(\frac{P_{t+1}}{P_t})$$ | Variável dependente| Numérico | $\Re+$
+Ret.di17 | Taxa de retorno diário do DI de 1 dia com venc. em jan/17| Calculado| $$Log(\frac{P_{t+1}}{P_t})$$ | Variável dependente| Numérico | $\Re+$
+Ret.di19 | Taxa de retorno diário do DI de 1 dia com venc. em jan/19| Calculado| $$Log(\frac{P_{t+1}}{P_t})$$ | Variável dependente| Numérico | $\Re+$
+Ret.di21 | Taxa de retorno diário do DI de 1 dia com venc. em jan/21| Calculado| $$Log(\frac{P_{t+1}}{P_t})$$ | Variável dependente| Numérico | $\Re+$
+Ret.di23 | Taxa de retorno diário do DI de 1 dia com venc. em jan/23| Calculado| $$Log(\frac{P_{t+1}}{P_t})$$ | Variável dependente| Numérico | $\Re+$
+Ret.di25 | Taxa de retorno diário do DI de 1 dia com venc. em jan/25| Calculado| $$Log(\frac{P_{t+1}}{P_t})$$ | Variável dependente| Numérico | $\Re+$
 
-
-#### Importando os dados da Economatica
+##### Importando os dados da Economatica
 
 A FGV disponibiliza aos alunos o acesso à base de dados economatica. Para esse trabalho temos o interesse em obter as cotações do fundo analisado (JGP Strategy...) e dos índices que servirão como proxy para os fatores de risco.
 
@@ -220,9 +295,13 @@ kurt3 <- with(jan3, cbind(kurtosis(Ret.verde), kurtosis(Ret.ibov), kurtosis(Ret.
 corr3 <- with(jan3, cbind(cor(Ret.verde,Ret.verde), cor(Ret.verde,Ret.ibov), cor(Ret.verde,Ret.snp), cor(Ret.verde,Ret.imab5), cor(Ret.verde,Ret.imab5p), cor(Ret.verde,Ret.dolar), cor(Ret.verde,Ret.di21), cor(Ret.verde,Ret.di25)))
 ```
 
-Os fatores “tropicalizados” utilizados no modelo são as taxas de retorno calculadas, dessa forma a hipótese de independência entre as observações da amostra aleatória do método de mínimos quadrados ordinários não é violada. No Item 4.3. a validade dessa hipótese é analisada em detalhe. As tabelas abaixo apresentam as estatísticas descritivas, para cada janela, de cada variável incluída no modelo de fatores:
+Os fatores “tropicalizados” utilizados no modelo são as taxas de retorno calculadas, dessa forma a hipótese de independência entre as observações da amostra aleatória do MQO não é violada. No Item 4.3. a validade dessa hipótese é analisada em detalhe.
 
-**Estatisticas Janela 1:**
+Foram escolhidas janelas de 70 dias em 3 anos distintos, de forma a testar o modelo em diferentes contextos macroeconômicos. Decidiu-se utilizar a janela no 2º trimestre de cada ano por não ser um trimestre de final de ano, não ser marcado por eleições e por ser um trimestre que historicamente os gestores não fazem grandes movimentações nas carteiras dos fundos.
+
+Esses trimestres também ficaram marcados por relevantes eventos macroeconômicos, como i) aprovação pela Câmara dos Deputados do impeachment da ex-presidente Dilma, em abril de 2016; ii) greve dos caminhoneiros, em maio de 2018; e iii) pandemia da Covid-19, em curso durante todo o 2º trimestre de 2020.
+
+###### Tabela 4: Estatísticas descritivas da janela 1 (2º tri/16)
 
 Fator| Mean| Standard Deviation| Skewness| Kurtosis| Corr(Ret.verde)
 ------------- | -------------| -------------| -------------| -------------| -------------
@@ -235,7 +314,7 @@ Ret.dolar | `r  media1[,6]`|`r  ep1[,6]`|`r  skew1[,6]`|`r  kurt1[,6]`| `r  corr
 Ret.di17 | `r  media1[,7]`|`r  ep1[,7]`|`r  skew1[,7]`|`r  kurt1[,7]`| `r  corr1[,7]`
 Ret.di21 | `r  media1[,8]`|`r  ep1[,8]`|`r  skew1[,8]`|`r  kurt1[,8]`| `r  corr1[,8]`
 
-**Estatisticas Janela 2:**
+###### Tabela 5: Estatísticas descritivas da janela 2 (2º tri/18)
 
 Fator| Mean| Standard Deviation| Skewness| Kurtosis| Corr(Ret.verde)
 ------------- | -------------| -------------| -------------| -------------| -------------
@@ -248,7 +327,7 @@ Ret.dolar | `r  media2[,6]`|`r  ep2[,6]`|`r  skew2[,6]`|`r  kurt2[,6]`| `r  corr
 Ret.di19 | `r  media2[,7]`|`r  ep2[,7]`|`r  skew2[,7]`|`r  kurt2[,7]`| `r  corr2[,7]`
 Ret.di23 | `r  media2[,8]`|`r  ep2[,8]`|`r  skew2[,8]`|`r  kurt2[,8]`| `r  corr2[,8]`
 
-**Estatisticas Janela 3:**
+###### Tabela 6: Estatísticas descritivas da janela 3 (2º tri/20)
 
 Fator| Mean| Standard Deviation| Skewness| Kurtosis| Corr(Ret.verde)
 ------------- | -------------| -------------| -------------| -------------| -------------
@@ -262,39 +341,14 @@ Ret.di21 | `r  media3[,7]`|`r  ep3[,7]`|`r  skew3[,7]`|`r  kurt3[,7]`| `r  corr3
 Ret.di25 | `r  media3[,8]`|`r  ep3[,8]`|`r  skew3[,8]`|`r  kurt3[,8]`| `r  corr3[,8]`
 
 
+### Metodologia (OLS)
 
-```{r histograma, echo = F, eval = T, include = F}
-# Histogramas dos retornos
-## Vale fazer um facet grid dos retornos?
-his <- jan1 %>%
-    ggplot(aes(x=Ret.ibov)) +
-        geom_histogram(binwidth=0.01, fill="#69b3a2", 
-                       color="#e9ecef", alpha=0.9) +
-        xlab("Daily Returns") +
-        ylab("Frequency")
-his
-```
-
-```{r , echo = F, eval = T, include = F}
-# Histogramas dos retornos
-## Vale fazer um facet grid dos retornos?
-### eu acho melhor para mostrar que a media do erro é zero utilizar os residuos.
-his <- jan1 %>%
-    ggplot(aes(x=Ret.ibov)) +
-        geom_histogram(binwidth=0.01, fill="#69b3a2", 
-                       color="#e9ecef", alpha=0.9) +
-        xlab("Daily Returns") +
-        ylab("Frequency")
-his
-```
-### 4 Metodologia (OLS)
-
-Cochrane (p. 435, 2005) explica que os retornos podem ser observados como um conjunto de dados “cross section” ou dados em séries temporais, dependendo da pergunta que se queira responder. Neste caso, estuda-se o nível de retorno dado certos fatores de risco num instante t, dito isso é adequado o uso do método clássico de OLS para obter os coeficientes dos fatores do modelo.
+CCochrane (p. 435, 2005) explica que os retornos podem ser observados como um conjunto de dados “cross section” ou dados em séries temporais, dependendo da pergunta que se queira responder. Neste caso, estuda-se o nível de retorno dado certos fatores de risco num instante t, dito isso é adequado o uso do método clássico de OLS para obter os coeficientes dos fatores do modelo.
 
 A seguir, vamos escrever o modelo a estimar pelo método de OLS, calculamos a regressão linear para cada janela de tempo e vemos se são cumpridas as propriedades algébricas dos estimadores de OLS para que sejam aceitas como certas as hipóteses de Gauss-Markov.
 
 
-#### 4.1 Relação Linear (nos coeficientes)
+#### 1.1 Relação Linear (nos coeficientes)
 
 O modelo populacional é descrito como:
 
@@ -330,22 +384,22 @@ summary(regres3)
 
 As hipóteses de Gauss-Markov para que o método de OLS seja não viesado são:
 
-#### 4.2 Média Condicional Zero
+#### 1.2 Média Condicional Zero
 
 O erro $\mu$ tem um valor esperado igual a zero, dados quaisquer valores das variáveis independentes. Em formula $E(\mu|F_1, F_2,...,F_7)$.
 
-#### 4.3 Amostra Aleatória (iid)
+#### 1.3 Amostra Aleatória (iid)
 
 Assumimos que nossa amostra é aleatória e independente. Segundo Cochrane, o preço de um ativo é dado por p_t+1 =p_t +ε_t+1, ou seja, se σ2(ε )=constante os preços seguem um "random walk". Essa definição é amplamente utilizada na teoria de finanças tradicionais e quer dizer que, se os mercados financeiros são eficientes, o preço de amanhã deve ser explicado pelo preço de hoje (que reflete toda a informação disponível sobre esse ativo) mais um choque imprevisível. Intuitivamente, se o preço hoje está muito menor que o preço de amanhã, os agentes vão antecipar esse aumento de preço e tentar comprar esse ativo, levando a um aumento de preço hoje e não amanhã. Sendo assim, os retornos de um ativo devem ser tão imprevisíveis como jogar uma moeda.
 
-#### 4.4 Multicolinearidade não-perfeita
+#### 1.4 Multicolinearidade não-perfeita
 
 A hipóteses RLM.3 Colinearidade não perfeita diz:
  “Na amostra (e, portanto, na população) nenhuma das variáveis independentes é constante, e não há relações lineares exatas entre as variáveis independentes”
  
 A continuação vemos, para cada janela de tempo (1, 2 e 3), que as correlações entre as variáveis independentes não são perfeitas, por tanto não há relações lineares entre elas.
 
-$\underline{Testando\space as\space propiedades\space algebraicas:}$
+> Testando as propriedades algebraicas:
 
 ```{r rlm.4, echo = F, eval = T, include = F}
 
@@ -365,11 +419,11 @@ muhat3 = mean(u3.hat)
 * Propriedade 1: $E(\hat{\mu}|F_1, F_2,...,F_7)$
 Os valores esperados dos resíduos da Janela 1, 2 e 3 são:
 
-* *$E(\hat{\mu_1})$ = `r muhat1`*
+  + *$E(\hat{\mu_1})$ = `r muhat1`*
 
-* *$E(\hat{\mu_2})$ = `r muhat2`*
+  + *$E(\hat{\mu_2})$ = `r muhat2`*
 
-* *$E(\hat{\mu_3})$ = `r muhat3`*
+  + *$E(\hat{\mu_3})$ = `r muhat3`*
 
 Podemos observar que os valores esperados dos resíduos para as três janelas de tempo estão muito perto de zero e por tanto a hipóteses de média condicional zero é cumprida.
 
@@ -391,45 +445,24 @@ cov2 = cbind(cov(jan2$Ret.ibov, u2.hat), cov(jan2$Ret.snp, u2.hat), cov(jan2$Ret
 cov3 = cbind(cov(jan3$Ret.ibov, u3.hat), cov(jan3$Ret.snp, u3.hat), cov(jan3$Ret.imab5, u3.hat), cov(jan3$Ret.imab5p, u3.hat), cov(jan3$Ret.dolar, u3.hat), cov(jan3$Ret.di21, u3.hat), cov(jan3$Ret.di25, u3.hat))
 ```
 
-**Janela 1:**
+###### Tabela 7: $Cov(F_j, \hat{\mu_j})$
 
-**Fator j**|**$Cov(F_j, \hat{\mu_j})$**
--------|-------
-ret.ibov| `r cov1[,1]`
-ret.snp| `r cov1[,2]`
-ret.imab5| `r cov1[,3]`
-ret.imab5p| `r cov1[,4]`
-ret.dolar| `r cov1[,5]`
-ret.di17| `r cov1[,6]`
-ret.di21| `r cov1[,7]`
+**Fator j**|**Janela 1 $Cov(F_j, \hat{\mu_j})$** |**Janela 2 $Cov(F_j, \hat{\mu_j})$** |**Janela 3 $Cov(F_j, \hat{\mu_j})$**
+-------|-------|-------|-------
+ret.ibov| `r cov1[,1]` | `r cov2[,1]` | `r cov3[,1]`
+ret.snp| `r cov1[,2]` | `r cov2[,2]` | `r cov3[,2]`
+ret.imab5| `r cov1[,3]` | `r cov2[,3]` | `r cov3[,3]`
+ret.imab5p| `r cov1[,4]` | `r cov2[,4]`| `r cov3[,4]`
+ret.dolar| `r cov1[,5]` | `r cov2[,5]`| `r cov3[,5]`
+ret.di17| `r cov1[,6]` | `r cov2[,6]`| `r cov3[,6]`
+ret.di21| `r cov1[,7]` | `r cov2[,7]`| `r cov3[,7]`
 
-**Janela 2:**
-
-**Fator j**|**$cov(F_j, \hat{\mu_j})$**
--------|-------
-ret.ibov| `r cov2[,1]`
-ret.snp| `r cov2[,2]`
-ret.imab5| `r cov2[,3]`
-ret.imab5p| `r cov2[,4]`
-ret.dolar| `r cov2[,5]`
-ret.di17| `r cov2[,6]`
-ret.di21| `r cov2[,7]`
-
-**Janela 3:**
-
-**Fator j**|**$cov(F_j, \hat{\mu_j})$**
--------|-------
-ret.ibov| `r cov3[,1]`
-ret.snp| `r cov3[,2]`
-ret.imab5| `r cov3[,3]`
-ret.imab5p| `r cov3[,4]`
-ret.dolar| `r cov3[,5]`
-ret.di17| `r cov3[,6]`
-ret.di21| `r cov3[,7]`
 
 Podemos observar que todos os valores estão perto do zero, pelo qual assumimos que as hipóteses são verdadeiras.
 
 * Propriedade 3: O ponto $(\tilde{F_1}, \tilde{F_2}, ..., \tilde{F_7})$ esta sempre sobre a reta de regressão de OLS $\tilde{R} = \tilde{F_1} + \tilde{F_2} + ... + \tilde{F_7}$
+
+###### Tabela 8: Propriedade 3
 
 |**Janela 1**|**Janela 2**|**Janela 3**
 -----|-----|-----|-----
@@ -439,7 +472,7 @@ $\bar{Y}=$| `r mean(jan1$Ret.verde)`| `r mean(jan2$Ret.verde)`| `r mean(jan3$Ret
 
 Também podemos observar que as correlações entre as variáveis independentes não são perfeitas:
 
-**Matriz de correlacoes entre os fatores Janela 1:**
+###### Tabela 9: Matriz de correlacoes entre os fatores Janela 1
 
 Fator| Ret.ibov| Ret.snp| Ret.imab5| Ret.imab5p|Ret.dolar|Ret.di17|Ret.di21
 ------------- | -------------| -------------| -------------| -------------| -------------| -------------| -------------
@@ -451,7 +484,7 @@ Ret.dolar | `r  cor(jan1$Ret.dolar, jan1$Ret.ibov)`|`r  cor(jan1$Ret.dolar, jan1
 Ret.di17 | `r  cor(jan1$Ret.di17, jan1$Ret.ibov)`|`r  cor(jan1$Ret.di17, jan1$Ret.snp)`|`r  cor(jan1$Ret.di17, jan1$Ret.imab5)`|`r  cor(jan1$Ret.di17, jan1$Ret.imab5p)`|`r  cor(jan1$Ret.di17, jan1$Ret.dolar)`|`r  cor(jan1$Ret.di17, jan1$Ret.di17)`|`r  cor(jan1$Ret.di17, jan1$Ret.di21)`
 Ret.di21 | `r  cor(jan1$Ret.di21, jan1$Ret.ibov)`|`r  cor(jan1$Ret.di21, jan1$Ret.snp)`|`r  cor(jan1$Ret.di21, jan1$Ret.imab5)`|`r  cor(jan1$Ret.di21, jan1$Ret.imab5p)`|`r  cor(jan1$Ret.di21, jan1$Ret.dolar)`|`r  cor(jan1$Ret.di21, jan1$Ret.di17)`|`r  cor(jan1$Ret.di21, jan1$Ret.di21)`
 
-**Matriz de correlacoes entre os fatores Janela 2:**
+###### Tabela 10: Matriz de correlacoes entre os fatores Janela 2
 
 Fator| Ret.ibov| Ret.snp| Ret.imab5| Ret.imab5p|Ret.dolar|Ret.di19|Ret.di23
 ------------- | -------------| -------------| -------------| -------------| -------------| -------------| -------------
@@ -463,7 +496,7 @@ Ret.dolar | `r  cor(jan2$Ret.dolar, jan2$Ret.ibov)`|`r  cor(jan2$Ret.dolar, jan2
 Ret.di19 | `r  cor(jan2$Ret.di19, jan2$Ret.ibov)`|`r  cor(jan2$Ret.di19, jan2$Ret.snp)`|`r  cor(jan2$Ret.di19, jan2$Ret.imab5)`|`r  cor(jan2$Ret.di19, jan2$Ret.imab5p)`|`r  cor(jan2$Ret.di19, jan2$Ret.dolar)`|`r  cor(jan2$Ret.di19, jan2$Ret.di19)`|`r  cor(jan2$Ret.di19, jan2$Ret.di23)`
 Ret.di23 | `r  cor(jan2$Ret.di23, jan2$Ret.ibov)`|`r  cor(jan2$Ret.di23, jan2$Ret.snp)`|`r  cor(jan2$Ret.di23, jan2$Ret.imab5)`|`r  cor(jan2$Ret.di23, jan2$Ret.imab5p)`|`r  cor(jan2$Ret.di23, jan2$Ret.dolar)`|`r  cor(jan2$Ret.di23, jan2$Ret.di19)`|`r  cor(jan2$Ret.di23, jan2$Ret.di23)`
 
-**Matriz de correlacoes entre os fatores Janela 3:**
+###### Tabela 11: Matriz de correlacoes entre os fatores Janela 3
 
 Fator| Ret.ibov| Ret.snp| Ret.imab5| Ret.imab5p|Ret.dolar|Ret.di21|Ret.di25
 ------------- | -------------| -------------| -------------| -------------| -------------| -------------| -------------
@@ -475,10 +508,78 @@ Ret.dolar | `r  cor(jan3$Ret.dolar, jan3$Ret.ibov)`|`r  cor(jan3$Ret.dolar, jan3
 Ret.di21 | `r  cor(jan3$Ret.di21, jan3$Ret.ibov)`|`r  cor(jan3$Ret.di21, jan3$Ret.snp)`|`r  cor(jan3$Ret.di21, jan3$Ret.imab5)`|`r  cor(jan3$Ret.di21, jan3$Ret.imab5p)`|`r  cor(jan3$Ret.di21, jan3$Ret.dolar)`|`r  cor(jan3$Ret.di21, jan3$Ret.di21)`|`r  cor(jan3$Ret.di21, jan3$Ret.di25)`
 Ret.di25 | `r  cor(jan3$Ret.di25, jan3$Ret.ibov)`|`r  cor(jan3$Ret.di25, jan3$Ret.snp)`|`r  cor(jan3$Ret.di25, jan3$Ret.imab5)`|`r  cor(jan3$Ret.di25, jan3$Ret.imab5p)`|`r  cor(jan3$Ret.di25, jan3$Ret.dolar)`|`r  cor(jan3$Ret.di25, jan3$Ret.di21)`|`r  cor(jan3$Ret.di25, jan3$Ret.di25)`
 
-#### 4.5 Homocedasticidade
+#### 1.5 Homocedasticidade
 
+Para validar a hipóteses de homocedasticidade $Var(\mu|F_1, F_2, ... , F_7) = \sigma^2$, vamos a considerar o teste de hipóteses:
+
+$$H_0: \space Var(\mu|F_1, F_2, ... , F_7) = \sigma^2$$
+Presumimos que a hipótese ideal de homocedasticidade se mantém e precisamos que os dados nos informem se isso é adequado o não. Utilizamos o teste de Breusch-Pagan (BP) para heteroscedasticidade, se não pudermos rejeita a equaç ao 1.5.1 em um nível de significância suficientemente pequeno, concluímos que a heterocedasticidade não é um problema.
+
+
+##### BP Teste Janela 1
+
+```{r bptest1}
+bptest(regres1)
+```
+
+##### BP Teste Janela 2
+
+```{r bptest2}
+bptest(regres2)
+```
+##### BP Teste Janela 3
+
+```{r bptest3}
+bptest(regres3)
+```
+
+Podemos observar que não teremos problemas de heterocedasticidade para nenhuma janela de tempo, não precisamos utilizar as estatísticas robustas para heterocedasticidade e podemos usar as estatísticas t e F da regressão de MQO homocedástica.
 
 ### Report Results
 
+Observa-se, nos resultados apresentados neste item, que a significância dos fatores em cada janela varia a partir dos valores do teste t para cada coeficiente. Para a primeira janela, os únicos fatores significativos apontados pelo modelo foram os referentes ao SP500, com significância 5%, e ao IMA-B5, com significância 0,1%. Já a significância do modelo como um todo é dada pela estatística F, que apontou a validade do modelo com significância 0,1%. O R2 obtido na regressão dessa janela foi de 0.426 (ou 42.6%), o que pode ser interpretado como a parcela dos retornos do fundo que são explicados pelos fatores escolhidos.
+
+###### Tabela 12: resultados da janela 1 - summary
+
+```{r summaryJ1, echo = T, eval = T, include = T}
+## Regressão da janela 1 (2016)
+summary(regres1)
+
+```
+
+Para a segunda, o único fator em que não se rejeita a hipótese nula (beta=0) foi o referente ao IMA-B5+, sendo os demais significantes a diferentes níveis. Já a significância do modelo como um todo é dada pela estatística F, que apontou a validade do modelo com significância 0,1%. O R2 obtido na regressão dessa janela foi de 0.717 (ou 71.7%), o que pode ser interpretado como a parcela dos retornos do fundo que são explicados pelos fatores escolhidos.
+
+###### Tabela 13: resultados da janela 2 - summary
+
+```{r summaryJ2, echo = T, eval = T, include = T}
+## Regressão da janela 1 (2016)
+summary(regres2)
+
+```
+
+Para a terceira, os coeficientes referentes a SP500, IBOV, e juros (DI21 e DI25) se mostraram significativos, enquanto os demais não tiveram a hipótese nula rejeitada. Já a significância do modelo como um todo é dada pela estatística F, que apontou a validade do modelo com significância 0,1%. O R2 obtido na regressão dessa janela foi de 0.838 (ou 83.8%), o que pode ser interpretado como a parcela dos retornos do fundo que são explicados pelos fatores escolhidos.
+
+###### Tabela 14: resultados da janela 3 - summary
+
+```{r summaryJ3, echo = T, eval = T, include = T}
+## Regressão da janela 1 (2016)
+summary(regres3)
+
+```
+
 ### Conclusão
+
+A partir dos resultados apresentados na tabela resumo abaixo, é possível comparar as cartas dos gestores relativas a cada período analisado com os valores obtidos nas regressões.
+
+###### Tabela 15: 
+
+Nas cartas do gestor do fundo de abril, maio e junho de 2016 são apontadas posições compradas relevantes em bolsa americana e em NTN-B. O modelo previu as exposições nas duas posições, representado por betas positivos e significativos para as variáveis ‘Ret.snp’ e ‘Ret.imab5’). A carta também cita uma posição importante em moedas, não identificada no modelo, o que pode ser explicado pela exposição do fundo em Dólar x Renminbi, que não foi um fator de risco considerado no modelo. De fato, observa-se que essa janela obteve o menor valor de R2 (0.426), o que indica que os fatores escolhidos explicaram apenas 42.6% dos retornos do fundo nesse período.
+
+Nas cartas do gestor do fundo de abril, maio e junho de 2018 são apontadas posições compradas relevantes em NTN-B na parte intermediária da curva, em juros na parte curta da curva, em ações brasil e em ações globais. Observa-se, também, no modelo betas positivos e significativos para as variáveis ‘Ret.imab5’, ‘Ret.di19’, ‘Ret.ibov’ e ‘Ret.snp’. No caso do fator de risco dólar, nesse trimestre não foi possível validar com as cartas dos gestores, porque houve uma mudança da posição de vendido em dólar para comprado em dólar no meio do período. Vale destacar ainda que o modelo apontou um beta negativo significativo para a variável ‘Ret.di23’, mas não foi possível validar com as cartas pois nenhuma posição em juros longo (comprada ou vendida) foi citada.
+
+Nas cartas do gestor do fundo de abril, maio e junho de 2020 são apontadas posições compradas relevantes em ações brasileiras e globais, que estão de acordo com o apontado pelo modelo (betas positivos e significativos para as variáveis ‘Ret.ibov’ e ‘Ret.snp’). A carta também aponta ganhos em juros, mas não especifica se assumia uma posição comprada ou vendida e nem em qual parte da curva o fundo estava posicionado (curta ou longa). Nosso modelo apontou beta positivo significativo para ‘Ret.di21’ e beta negativo significativo para ‘Ret.di25’, mas devido à informação incompleta nas cartas fica difícil interpretar se o modelo acertou. As cartas também citam posição comprada em dólar contra real, mas o modelo não previu a exposição a esse fator de risco (beta estatisticamente nulo).
+
+O objetivo deste trabalho é estimar, dada uma janela de tempo, a alocação de um fundo de investimentos multimercado no Brasil. Considerando o escopo e os recursos adequados a este trabalho, concluímos que o modelo apresentado mostrou uma performance satisfatória já que conseguiu explicar a maior parte das exposições importantes apontadas nas cartas do gestor.
+
+Vale destacar algumas sugestões a trabalhos futuros, que possam aprofundar mais as questões que fogem do escopo deste trabalho. Para melhorar a interpretação dos betas, outros trabalhos poderiam restringir que a soma dos fatores das classes seja um, assim como o Sharpe faz no seu trabalho, mas para isso deve-se modificar a metodologia de estimação e não utilizar o método de OLS clássico. Outros trabalhos, poderiam buscar aumentar o ajuste da regressão (R2) avaliando outros fatores de risco, não considerados neste modelo, que busquem capturar exposição a outros ativos como moeda europeia ou chinesa, debêntures, entre outros.
 
