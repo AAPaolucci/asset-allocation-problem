@@ -28,7 +28,7 @@ options(OutDec = ".", round = 2, digits = c(5,2))
 
 ```{r pacotes, echo = T, eval = T, message = T, warning = T, include = F}
 # Pacotes populares: readxl, dplyr, tidyr, stringr, lubridate, plotly, dygraphs, data.table, tibble, zoo, xts, quantmod, BETs, sidrar. 
-packset = c("readxl","tidyr","dplyr","lubridate","xts","PerformanceAnalytics","plotly","dygraphs","dplyr", "quadprog")
+packset = c("readxl","tidyr","dplyr","lubridate","xts","PerformanceAnalytics","plotly","dygraphs","dplyr", "quadprog","stargazer")
 not_inst <- packset[!(packset %in% installed.packages()[,"Package"])]
 if(length(not_inst)) install.packages(not_inst)
 lapply(packset, require, character.only = TRUE)
@@ -85,11 +85,11 @@ snp <- read_xlsx('database.xlsx',sheet='S&P 500', skip=3, col_names=T)
 imab5 <- read_xlsx('database.xlsx',sheet='IMA-B 5', skip=3, col_names=T)
 imab5p <- read_xlsx('database.xlsx',sheet='IMA-B 5+', skip=3, col_names=T)
 dolar <- read_xlsx('database.xlsx',sheet='DOLX20', skip=3, col_names=T)
-di17 <- read_xlsx('database.xlsx',sheet='DI1N17', skip=3, col_names=T)
-di19 <- read_xlsx('database.xlsx',sheet='DI1N19', skip=3, col_names=T)
-di21 <- read_xlsx('database.xlsx',sheet='DI1N21', skip=3, col_names=T)
-di23 <- read_xlsx('database.xlsx',sheet='DI1N23', skip=3, col_names=T)
-di25 <- read_xlsx('database.xlsx',sheet='DI1N25', skip=3, col_names=T)
+di17 <- read_xlsx('database.xlsx',sheet='DI1F17', skip=3, col_names=T)
+di19 <- read_xlsx('database.xlsx',sheet='DI1F19', skip=3, col_names=T)
+di21 <- read_xlsx('database.xlsx',sheet='DI1F21', skip=3, col_names=T)
+di23 <- read_xlsx('database.xlsx',sheet='DI1F23', skip=3, col_names=T)
+di25 <- read_xlsx('database.xlsx',sheet='DI1F25', skip=3, col_names=T)
 
 # Transformar em timeseries object
 verde <- as.xts(verde[,'Cota'],order.by = verde$Data)
@@ -327,6 +327,13 @@ b3.hat<-coef(regres3) #coeficientes
 regres3.hat<-fitted(regres3) #retorno previsto
 u3.hat<-resid(regres3) #residuos
 summary(regres3)
+
+stargazer(list(regres1,regres2,regres3),type="text",
+          dep.var.labels.include = F,
+          column.labels = c("2otri/2016",
+                            "2otri/2018",
+                            "2otri/2020"),
+          keep.stat = c("n","rsq","f","ser"))
 ```
 
 As hipóteses de Gauss-Markov para que o método de OLS seja não viesado são:
