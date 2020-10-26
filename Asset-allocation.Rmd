@@ -3,8 +3,8 @@ title: "Uso do Modelo de Fatores na Determinação da Alocação de Fundos Multi
 author: "Arthur Paolucci, Felipe Nascimbeni Cosi, Carlos Tiburcio, Ignacio Bergallo"
 date: "02/10/2020"
 output:
-  html_document: default
   word_document: default
+  html_document: default
 ---
 
 ```{r setup, include=F}
@@ -26,8 +26,12 @@ options(OutDec = ".", round = 2, digits = c(5,2))
 ```
 
 ```{r pacotes, echo = T, eval = T, message = T, warning = T, include = F}
+
 # Pacotes populares: readxl, dplyr, tidyr, stringr, lubridate, plotly, dygraphs, data.table, tibble, zoo, xts, quantmod, BETs, sidrar, car. 
-packset = c("readxl","tidyr","dplyr","lubridate","xts","PerformanceAnalytics","plotly","dygraphs","dplyr", "quadprog", "car", "lmtest")
+packset = c("readxl","tidyr","dplyr","lubridate","xts","PerformanceAnalytics","plotly","dygraphs","dplyr", "quadprog", "car", "lmtest", "stargazer")
+
+# Pacotes populares: readxl, dplyr, tidyr, stringr, lubridate, plotly, dygraphs, data.table, tibble, zoo, xts, quantmod, BETs, sidrar. 
+packset = c("readxl","tidyr","dplyr","lubridate","xts","PerformanceAnalytics","plotly","dygraphs","dplyr", "quadprog","stargazer")
 not_inst <- packset[!(packset %in% installed.packages()[,"Package"])]
 if(length(not_inst)) install.packages(not_inst)
 lapply(packset, require, character.only = TRUE)
@@ -159,11 +163,11 @@ snp <- read_xlsx('database.xlsx',sheet='S&P 500', skip=3, col_names=T)
 imab5 <- read_xlsx('database.xlsx',sheet='IMA-B 5', skip=3, col_names=T)
 imab5p <- read_xlsx('database.xlsx',sheet='IMA-B 5+', skip=3, col_names=T)
 dolar <- read_xlsx('database.xlsx',sheet='DOLX20', skip=3, col_names=T)
-di17 <- read_xlsx('database.xlsx',sheet='DI1N17', skip=3, col_names=T)
-di19 <- read_xlsx('database.xlsx',sheet='DI1N19', skip=3, col_names=T)
-di21 <- read_xlsx('database.xlsx',sheet='DI1N21', skip=3, col_names=T)
-di23 <- read_xlsx('database.xlsx',sheet='DI1N23', skip=3, col_names=T)
-di25 <- read_xlsx('database.xlsx',sheet='DI1N25', skip=3, col_names=T)
+di17 <- read_xlsx('database.xlsx',sheet='DI1F17', skip=3, col_names=T)
+di19 <- read_xlsx('database.xlsx',sheet='DI1F19', skip=3, col_names=T)
+di21 <- read_xlsx('database.xlsx',sheet='DI1F21', skip=3, col_names=T)
+di23 <- read_xlsx('database.xlsx',sheet='DI1F23', skip=3, col_names=T)
+di25 <- read_xlsx('database.xlsx',sheet='DI1F25', skip=3, col_names=T)
 
 # Transformar em timeseries object
 verde <- as.xts(verde[,'Cota'],order.by = verde$Data)
@@ -380,6 +384,13 @@ b3.hat<-coef(regres3) #coeficientes
 regres3.hat<-fitted(regres3) #retorno previsto
 u3.hat<-resid(regres3) #residuos
 summary(regres3)
+
+stargazer(list(regres1,regres2,regres3),type="text",
+          dep.var.labels.include = F,
+          column.labels = c("2otri/2016",
+                            "2otri/2018",
+                            "2otri/2020"),
+          keep.stat = c("n","rsq","f","ser"))
 ```
 
 As hipóteses de Gauss-Markov para que o método de OLS seja não viesado são:
@@ -519,18 +530,18 @@ Presumimos que a hipótese ideal de homocedasticidade se mantém e precisamos qu
 ##### BP Teste Janela 1
 
 ```{r bptest1}
-bptest(regres1)
+lmtest::bptest(regres1)
 ```
 
 ##### BP Teste Janela 2
 
 ```{r bptest2}
-bptest(regres2)
+lmtest::bptest(regres2)
 ```
 ##### BP Teste Janela 3
 
 ```{r bptest3}
-bptest(regres3)
+lmtest::bptest(regres3)
 ```
 
 Podemos observar que não teremos problemas de heterocedasticidade para nenhuma janela de tempo, não precisamos utilizar as estatísticas robustas para heterocedasticidade e podemos usar as estatísticas t e F da regressão de MQO homocedástica.
@@ -572,6 +583,14 @@ summary(regres3)
 A partir dos resultados apresentados na tabela resumo abaixo, é possível comparar as cartas dos gestores relativas a cada período analisado com os valores obtidos nas regressões.
 
 ###### Tabela 15: 
+
+```{r stgare}
+stargazer(list(regres1,regres2,regres3),type="text",
+dep.var.labels.include = F, column.labels = c("2otri/2016",
+                                              "2otri/2018",
+                                              "2otri/2020"), 
+keep.stat = c("n","rsq","f","ser"))
+```
 
 Nas cartas do gestor do fundo de abril, maio e junho de 2016 são apontadas posições compradas relevantes em bolsa americana e em NTN-B. O modelo previu as exposições nas duas posições, representado por betas positivos e significativos para as variáveis ‘Ret.snp’ e ‘Ret.imab5’). A carta também cita uma posição importante em moedas, não identificada no modelo, o que pode ser explicado pela exposição do fundo em Dólar x Renminbi, que não foi um fator de risco considerado no modelo. De fato, observa-se que essa janela obteve o menor valor de R2 (0.426), o que indica que os fatores escolhidos explicaram apenas 42.6% dos retornos do fundo nesse período.
 
